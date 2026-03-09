@@ -38,7 +38,7 @@ class KnowledgeExtractRequest(BaseModel):
     max_depth: int = Field(default=5, description="最大深度")
 
 class KnowledgeExtractResponse(BaseModel):
-    """知识提取响应"""
+    """知识提取响应（完整版，含事件与逻辑门）"""
     task_id: str
     events: List[FaultEvent]
     gates: List[LogicGate]
@@ -47,7 +47,44 @@ class KnowledgeExtractResponse(BaseModel):
     traceability: Optional[List[Dict]] = None  # 溯源依据
     accuracy_metrics: Optional[Dict] = None  # 准确率指标
 
+
+class KnowledgeIngestResponse(BaseModel):
+    """知识入库响应（从文档提取并写入知识图谱后的简要结果）"""
+    task_id: str
+    inserted: int
+    skipped: int
+    duplicates: int
+    status: str
+
 # 故障树相关
+class FaultTreeTriplet(BaseModel):
+    """知识三元组（交付模块上传格式）"""
+    subject_name: str
+    subject_type: str
+    relation: str
+    object_name: str
+    object_type: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    source: Optional[str] = None
+
+
+class UploadKnowledgeRequest(BaseModel):
+    """POST /upload_knowledge 请求体"""
+    triplets: List[FaultTreeTriplet]
+
+
+class UploadKnowledgeResponse(BaseModel):
+    """POST /upload_knowledge 响应体（交付模块格式）"""
+    status: str
+    message: str
+
+
+class GenerateTreeResponse(BaseModel):
+    """GET /generate_tree 响应体（交付模块格式）"""
+    status: str
+    data: Dict[str, Any]
+
+
 class FaultTreeNode(BaseModel):
     """故障树节点"""
     node_id: str
@@ -65,15 +102,22 @@ class FaultTreeEdge(BaseModel):
     edge_type: str
 
 class FaultTreeData(BaseModel):
-    """故障树完整数据"""
+    """故障树完整数据（节点/边格式）"""
     tree_id: str
     nodes: List[FaultTreeNode]
     edges: List[FaultTreeEdge]
     metadata: Dict
 
+
+class FaultTreeGenerateResponse(BaseModel):
+    """故障树生成接口响应（含前端可直接使用的 nodeList/linkList）"""
+    tree_id: str
+    tree_data: Dict[str, Any] = Field(description="含 nodeList、linkList 等，供前端渲染")
+    metadata: Dict[str, Any]
+
 class FaultTreeGenerateRequest(BaseModel):
     """故障树生成请求"""
-    knowledge_id: str = Field(description="知识来源ID")
+    knowledge_id: Optional[str] = Field(default=None, description="知识来源ID，可选")
     top_event: str = Field(description="顶事件名称")
     max_depth: int = Field(default=5, ge=1, le=10, description="最大深度")
     requirements: Optional[str] = Field(default=None, description="生成要求")
