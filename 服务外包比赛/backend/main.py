@@ -104,6 +104,7 @@ app = FastAPI(
 # 从环境变量读取允许的域名白名单，生产环境禁止使用 "*"
 allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "")
 allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
+#   git remote add new-repo https://github.com/glfsc/FTAglfsc.git
 
 # 开发环境默认允许常见前端端口
 if not allowed_origins:
