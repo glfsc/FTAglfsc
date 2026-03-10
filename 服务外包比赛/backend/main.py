@@ -1,23 +1,34 @@
-"""故障树智能生成系统 - FastAPI主入口（已集成Neo4j模块）"""
+"""故障树智能生成系统 - FastAPI 主入口（已集成 Neo4j 模块）"""
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import Optional
 import logging
 import os
+import sys
 from dotenv import load_dotenv
 
 # 加载环境变量（必须在导入其他模块前执行）
 load_dotenv()
 
 # ================= 配置结构化日志记录 =================
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[logging.StreamHandler()]
-)
-logger = logging.getLogger(__name__)
+# 【优化】检查是否已经配置过日志处理器
+_logger_configured = False
+
+def setup_logger():
+    """配置日志记录器（只执行一次）"""
+    global _logger_configured
+    if not _logger_configured:
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            handlers=[logging.StreamHandler()]
+        )
+        _logger_configured = True
+        return logging.getLogger(__name__)
+
+logger = setup_logger()
 
 # ================= 全局依赖导入 =================
 from app.api.v1 import router as api_router
@@ -104,7 +115,6 @@ app = FastAPI(
 # 从环境变量读取允许的域名白名单，生产环境禁止使用 "*"
 allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "")
 allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
-#   git remote add new-repo https://github.com/glfsc/FTAglfsc.git
 
 # 开发环境默认允许常见前端端口
 if not allowed_origins:
@@ -113,16 +123,15 @@ if not allowed_origins:
         allowed_origins = []
     else:
         allowed_origins = [
-            "http://localhost:3000",   # React
-            "http://localhost:8080",   # Vue
+            "http://localhost:3000",
+            "http://localhost:8080",
             "http://127.0.0.1:3000",
-            "http://localhost:5173",   # Vite
+            "http://localhost:5173",
             "http://127.0.0.1:5173",
-            "http://localhost:8000",   # 同端口
+            "http://localhost:8000",
         ]
-        logger.info(f"🔧 开发环境默认允许的跨域来源：{allowed_origins}")
 
-logger.info(f"🔒 CORS 配置：允许 {len(allowed_origins)} 个跨域来源")
+# 【优化】简化 CORS 日志输出
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,

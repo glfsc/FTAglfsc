@@ -1,172 +1,141 @@
 <template>
-  <div class="generate-page">
+  <div class="upload-page">
     <div class="page-header">
-      <h2><el-icon><Share /></el-icon> 故障树生成与可视化</h2>
-      <p class="description">基于提取的知识自动构建故障树层级结构</p>
+      <h2><el-icon><Upload /></el-icon> 知识三元组上传</h2>
+      <p class="description">将结构化的故障知识三元组写入知识图谱</p>
     </div>
 
     <el-row :gutter="20">
-      <el-col :span="18">
-        <el-card class="graph-card" shadow="hover">
+      <el-col :span="12">
+        <el-card class="upload-card" shadow="hover">
           <template #header>
-            <div class="card-header">
-              <span><el-icon><View /></el-icon> 故障树图形编辑器</span>
-              <div class="header-actions">
-                <el-button-group>
-                  <el-button size="small" @click="zoomIn">
-                    <el-icon><ZoomIn /></el-icon>
-                  </el-button>
-                  <el-button size="small" @click="zoomOut">
-                    <el-icon><ZoomOut /></el-icon>
-                  </el-button>
-                  <el-button size="small" @click="resetView">
-                    <el-icon><Refresh /></el-icon>
-                  </el-button>
-                </el-button-group>
-                <el-button type="primary" size="small" @click="saveTree">
-                  <el-icon><Select /></el-icon>
-                  保存
-                </el-button>
-                <el-button type="success" size="small" @click="goToVerify">
-                  <el-icon><Right /></el-icon>
-                  逻辑检验
-                </el-button>
-              </div>
-            </div>
+            <span><el-icon><Document /></el-icon> 上传方式一：手动输入 JSON</span>
           </template>
 
-          <div class="graph-container" ref="graphContainer">
-            <div id="mxgraph-container" :style="{ 
-              width: '100%', 
-              height: '600px', 
-              border: '1px solid #dcdfe6',
-              background: '#fafafa'
-            }">
-              <div v-if="!currentTreeId" class="empty-state">
-                <el-empty description="暂无故障树数据">
-                  <el-button type="primary" @click="generateTree">
-                    <el-icon><MagicStick /></el-icon>
-                    生成故障树
-                  </el-button>
-                </el-empty>
-              </div>
-              <div v-else class="tree-view">
-                <!-- mxGraph渲染区域 -->
-                <div style="padding: 50px; text-align: center;">
-                  <el-result
-                    icon="success"
-                    title="故障树已生成"
-                    sub-title="图形编辑功能需要集成mxGraph库"
-                  >
-                    <template #extra>
-                      <el-space>
-                        <el-button type="primary" @click="goToVerify">进入检验</el-button>
-                        <el-button @click="regenerateTree">重新生成</el-button>
-                      </el-space>
-                    </template>
-                  </el-result>
-                </div>
-              </div>
+          <el-input
+            v-model="jsonInput"
+            type="textarea"
+            :rows="10"
+            placeholder='请输入 JSON 格式的三元组，支持两种格式：
+
+格式 1（直接数组）：
+[
+  {
+    "subject_name": "登机梯电机过热",
+    "subject_type": "BasicEvent",
+    "relation": "resultsIn",
+    "object_name": "电机停机保护",
+    "object_type": "IntermediateEvent",
+    "confidence": 0.92,
+    "source": "维修手册 P45"
+  }
+]
+
+格式 2（带 triplets 字段）：
+{
+  "triplets": [ ... ]
+}'
+          />
+
+          <!-- 新增：顶事件输入框 -->
+          <div style="margin-top: 15px;">
+            <el-label style="font-weight: 600; margin-bottom: 8px; display: block;">
+              <el-icon><Search /></el-icon> 顶事件名称
+            </el-label>
+            <el-input
+              v-model="topEventInput"
+              placeholder="请输入顶事件名称，例如：登机梯无法展开"
+              prefix-icon="Search"
+              size="large"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+            <div style="margin-top: 5px; font-size: 12px; color: #909399;">
+              💡 系统会根据该顶事件自动构建完整的故障树
             </div>
           </div>
 
-          <div class="toolbar">
-            <el-space wrap>
-              <el-button-group>
-                <el-button size="small">
-                  <el-icon><Plus /></el-icon>
-                  添加事件节点
-                </el-button>
-                <el-button size="small">
-                  <el-icon><Connection /></el-icon>
-                  添加逻辑门
-                </el-button>
-                <el-button size="small">
-                  <el-icon><Delete /></el-icon>
-                  删除节点
-                </el-button>
-              </el-button-group>
-
-              <el-divider direction="vertical" />
-
-              <el-tag>节点总数: {{ nodeCount }}</el-tag>
-              <el-tag type="success">层级深度: {{ treeDepth }}</el-tag>
-            </el-space>
-          </div>
+          <el-button
+            type="primary"
+            style="width: 100%; margin-top: 15px;"
+            @click="validateAndUpload"
+            :loading="uploading"
+            size="large"
+          >
+            <el-icon><Upload /></el-icon>
+            {{ uploading ? '处理中...' : '上传三元组并生成故障树' }}
+          </el-button>
         </el-card>
       </el-col>
 
-      <el-col :span="6">
-        <el-card class="config-card" shadow="hover">
+      <el-col :span="12">
+        <el-card class="example-card" shadow="hover">
           <template #header>
-            <span><el-icon><Setting /></el-icon> 生成配置</span>
+            <span><el-icon><InfoFilled /></el-icon> 数据格式说明</span>
           </template>
 
-          <el-form label-width="80px" label-position="top">
-            <el-form-item label="顶事件">
-              <el-input v-model="topEvent" placeholder="系统故障" />
-            </el-form-item>
-
-            <el-form-item label="最大深度">
-              <el-slider v-model="maxDepth" :min="3" :max="10" show-stops />
-            </el-form-item>
-
-            <el-form-item label="布局方式">
-              <el-select v-model="layoutType" style="width: 100%">
-                <el-option label="自顶向下" value="top-down" />
-                <el-option label="自左向右" value="left-right" />
-                <el-option label="径向布局" value="radial" />
-              </el-select>
-            </el-form-item>
-
-            <el-button 
-              type="primary" 
-              style="width: 100%"
-              :loading="generating"
-              @click="generateTree"
-            >
-              <el-icon><MagicStick /></el-icon>
-              {{ currentTreeId ? '重新生成' : '生成故障树' }}
-            </el-button>
-          </el-form>
-        </el-card>
-
-        <el-card class="legend-card" shadow="hover" style="margin-top: 20px;">
-          <template #header>
-            <span><el-icon><InfoFilled /></el-icon> 图例说明</span>
-          </template>
-
-          <div class="legend-items">
-            <div class="legend-item">
-              <div class="legend-icon" style="background: #f56c6c;"></div>
-              <span>顶事件</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-icon" style="background: #e6a23c;"></div>
-              <span>中间事件</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-icon" style="background: #67c23a;"></div>
-              <span>底事件</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-icon diamond" style="background: #409eff;"></div>
-              <span>逻辑门</span>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card class="stats-card" shadow="hover" style="margin-top: 20px;">
-          <template #header>
-            <span><el-icon><DataLine /></el-icon> 树结构统计</span>
-          </template>
-
-          <el-descriptions :column="1" border size="small">
-            <el-descriptions-item label="节点总数">{{ nodeCount }}</el-descriptions-item>
-            <el-descriptions-item label="事件节点">{{ eventCount }}</el-descriptions-item>
-            <el-descriptions-item label="逻辑门">{{ gateCount }}</el-descriptions-item>
-            <el-descriptions-item label="树深度">{{ treeDepth }}</el-descriptions-item>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="subject_name">
+              主体名称（故障事件名）
+            </el-descriptions-item>
+            <el-descriptions-item label="subject_type">
+              主体类型：BasicEvent / IntermediateEvent / TopEvent
+            </el-descriptions-item>
+            <el-descriptions-item label="relation">
+              关系类型：resultsIn / causedBy / relatedTo / jointly_resultsIn
+            </el-descriptions-item>
+            <el-descriptions-item label="object_name">
+              客体名称（结果事件名）
+            </el-descriptions-item>
+            <el-descriptions-item label="object_type">
+              客体类型：BasicEvent / IntermediateEvent / TopEvent
+            </el-descriptions-item>
+            <el-descriptions-item label="confidence">
+              置信度：0.0 - 1.0
+            </el-descriptions-item>
+            <el-descriptions-item label="source">
+              数据来源（可选）
+            </el-descriptions-item>
           </el-descriptions>
+
+          <el-alert
+            title="提示"
+            type="info"
+            :closable="false"
+            style="margin-top: 15px;"
+          >
+            <p>• 支持批量上传多个三元组</p>
+            <p>• 系统会自动去重和合并重复边的证据</p>
+            <p>• 置信度用于后续路径过滤和权重计算</p>
+          </el-alert>
+        </el-card>
+
+        <el-card class="history-card" shadow="hover" style="margin-top: 20px;">
+          <template #header>
+            <span><el-icon><Clock /></el-icon> 上传历史</span>
+          </template>
+
+          <el-timeline>
+            <el-timeline-item
+              v-for="(record, index) in uploadHistory"
+              :key="index"
+              :timestamp="record.time"
+              placement="top"
+              :type="record.status === 'success' ? 'success' : 'danger'"
+            >
+              <el-card>
+                <p>成功入库 {{ record.inserted }} 条</p>
+                <p v-if="record.skipped > 0" style="color: #e6a23c;">
+                  拦截脏数据 {{ record.skipped }} 条
+                </p>
+                <p v-if="record.duplicates > 0" style="color: #909399;">
+                  内存去重 {{ record.duplicates }} 条
+                </p>
+              </el-card>
+            </el-timeline-item>
+          </el-timeline>
         </el-card>
       </el-col>
     </el-row>
@@ -177,94 +146,115 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
-  Share, View, Setting, MagicStick, Select, Right,
-  ZoomIn, ZoomOut, Refresh, Plus, Connection, Delete,
-  InfoFilled, DataLine
-} from '@element-plus/icons-vue'
-import { generateFaultTree, optimizeFaultTree } from '@/api'
+import { Upload, Document, InfoFilled, Clock, Search } from '@element-plus/icons-vue'
+import { uploadKnowledge, generateFaultTree } from '@/api'
 
 const router = useRouter()
-const graphContainer = ref(null)
-const currentTreeId = ref(null)
-const generating = ref(false)
+const jsonInput = ref('')
+const uploading = ref(false)
+const uploadHistory = ref([])
+const topEventInput = ref('登机梯无法展开')  // 默认顶事件
 
-const topEvent = ref('系统故障')
-const maxDepth = ref(5)
-const layoutType = ref('top-down')
+const validateAndUpload = async () => {
+  if (!jsonInput.value.trim()) {
+    ElMessage.warning('请输入 JSON 数据')
+    return
+  }
 
-const nodeCount = ref(4)
-const eventCount = ref(3)
-const gateCount = ref(1)
-const treeDepth = ref(2)
+  let triplets
+  try {
+    triplets = JSON.parse(jsonInput.value)
+    // 支持两种格式：直接数组或包含 triplets 字段的对象
+    if (Array.isArray(triplets)) {
+      // 直接数组格式
+    } else if (triplets.triplets && Array.isArray(triplets.triplets)) {
+      triplets = triplets.triplets  // 提取数组
+    } else {
+      throw new Error('JSON 必须是三元组数组格式')
+    }
+  } catch (error) {
+    ElMessage.error(`JSON 格式错误：${error.message}`)
+    return
+  }
 
-const generateTree = async () => {
-  generating.value = true
+  uploading.value = true
 
   try {
-    const result = await generateFaultTree({
-      knowledge_id: 'mock-knowledge-id',
-      top_event: topEvent.value,
-      max_depth: maxDepth.value
+    // 步骤 1: 上传三元组到知识图谱
+    const uploadResponse = await uploadKnowledge(triplets)
+
+    ElMessage.success({
+      message: `✅ 三元组入库成功！有效入库 ${uploadResponse.inserted || triplets.length} 条`,
+      duration: 2000
     })
-    
-    currentTreeId.value = result.tree_id
-    nodeCount.value = result.nodes.length
-    eventCount.value = result.nodes.filter(n => n.node_type === 'event').length
-    gateCount.value = result.nodes.filter(n => n.node_type === 'gate').length
-    
-    ElMessage.success('故障树生成成功')
-    renderTree(result)
+
+    // 步骤 2: 自动生成故障树（关键步骤）
+    if (topEventInput.value) {
+      ElMessage.info(`🌲 正在生成故障树（顶事件：${topEventInput.value}）...`)
+
+      try {
+        const treeResponse = await generateFaultTree(topEventInput.value)
+
+        ElMessage.success('✅ 故障树生成成功！')
+
+        // 步骤 3: 存储生成的故障树数据到 sessionStorage
+        // 这样其他页面（如 VerifyPage）可以获取并显示
+        if (treeResponse.data) {
+          sessionStorage.setItem('generatedFaultTree', JSON.stringify(treeResponse.data))
+          sessionStorage.setItem('topEventName', topEventInput.value)
+
+          ElMessage.info('正在跳转到故障树页面...')
+
+          // 步骤 4: 自动跳转到故障树显示/编辑页面
+          setTimeout(() => {
+            router.push('/verify')
+          }, 1000)
+        }
+
+      } catch (treeError) {
+        console.error('故障树生成失败:', treeError)
+        ElMessage.warning({
+          message: `三元组已入库，但故障树生成失败：${treeError.response?.data?.detail || treeError.message}`,
+          duration: 5000
+        })
+      }
+    }
+
+    // 添加到历史记录
+    uploadHistory.value.unshift({
+      time: new Date().toLocaleString(),
+      topEvent: topEventInput.value,
+      inserted: uploadResponse.inserted || triplets.length,
+      skipped: uploadResponse.skipped || 0,
+      duplicates: uploadResponse.duplicates || 0,
+      status: 'success',
+      treeGenerated: true
+    })
+
+    // 清空输入
+    jsonInput.value = ''
+
   } catch (error) {
-    ElMessage.error('故障树生成失败')
+    console.error('上传失败:', error)
+    ElMessage.error(`❌ 操作失败：${error.response?.data?.detail || error.message}`)
+
+    uploadHistory.value.unshift({
+      time: new Date().toLocaleString(),
+      topEvent: topEventInput.value,
+      inserted: 0,
+      skipped: 0,
+      duplicates: 0,
+      status: 'failed',
+      treeGenerated: false
+    })
   } finally {
-    generating.value = false
+    uploading.value = false
   }
 }
-
-const regenerateTree = () => {
-  currentTreeId.value = null
-  generateTree()
-}
-
-const renderTree = (treeData) => {
-  console.log('渲染故障树:', treeData)
-  // TODO: 实现mxGraph渲染逻辑
-}
-
-const saveTree = async () => {
-  if (!currentTreeId.value) {
-    ElMessage.warning('请先生成故障树')
-    return
-  }
-
-  try {
-    await optimizeFaultTree({
-      tree_id: currentTreeId.value,
-      modified_nodes: [],
-      modified_edges: []
-    })
-    ElMessage.success('保存成功')
-  } catch (error) {
-    ElMessage.error('保存失败')
-  }
-}
-
-const goToVerify = () => {
-  if (!currentTreeId.value) {
-    ElMessage.warning('请先生成故障树')
-    return
-  }
-  router.push({ path: '/verify', query: { treeId: currentTreeId.value } })
-}
-
-const zoomIn = () => ElMessage.info('放大功能')
-const zoomOut = () => ElMessage.info('缩小功能')
-const resetView = () => ElMessage.info('重置视图')
 </script>
 
 <style scoped>
-.generate-page {
+.upload-page {
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -289,61 +279,13 @@ const resetView = () => ElMessage.info('重置视图')
   font-size: 15px;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
+.upload-card,
+.example-card,
+.history-card {
+  border-radius: 8px;
 }
 
-.card-header span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.graph-container {
-  background: white;
-}
-
-.empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 600px;
-}
-
-.toolbar {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.legend-items {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.legend-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 4px;
-}
-
-.legend-icon.diamond {
-  transform: rotate(45deg);
+:deep(.el-timeline-item__node) {
+  font-size: 13px;
 }
 </style>

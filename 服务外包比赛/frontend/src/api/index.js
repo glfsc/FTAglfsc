@@ -1,64 +1,113 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+// 创建 axios 实例
 const api = axios.create({
   baseURL: '/api/v1',
-  timeout: 60000
+  timeout: 60000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-    return config
+   return config
   },
   error => {
-    return Promise.reject(error)
+    console.error('请求错误:', error)
+   return Promise.reject(error)
   }
 )
 
 // 响应拦截器
 api.interceptors.response.use(
   response => {
-    return response.data
+   return response.data
   },
   error => {
-    ElMessage.error(error.response?.data?.detail || '请求失败')
-    return Promise.reject(error)
+    const errorMsg = error.response?.data?.detail || error.message || '请求失败'
+    ElMessage.error(errorMsg)
+   return Promise.reject(error)
   }
 )
 
-// 文件上传
-export const uploadFile = (file) => {
+/**
+ * 健康检查接口
+ * GET /api/health
+ */
+export const healthCheck = () => {
+  return api.get('/health')
+}
+
+/**
+ * 上传知识三元组
+ * POST /api/v1/fault-tree/upload_knowledge
+ * @param {Array} triplets - 三元组数组
+ */
+export const uploadKnowledge = (triplets) => {
+  // 支持两种格式：直接数组或包含 triplets 字段的对象
+  const payload = Array.isArray(triplets) ? { triplets } : triplets
+  return api.post('/fault-tree/upload_knowledge', payload)
+}
+
+/**
+ * 上传文件
+ * POST /api/v1/fault-tree/upload
+ * @param {File} file - 上传的文件
+ */
+export const uploadFile = async (file) => {
   const formData = new FormData()
   formData.append('file', file)
-  return api.post('/data/import', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+
+  const response = await api.post('/fault-tree/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+  return response
+}
+
+/**
+ * 提取知识
+ * POST /api/v1/fault-tree/extract
+ * @param {string} fileId - 文件 ID
+ */
+export const extractKnowledge = (fileId) => {
+  return api.post('/fault-tree/extract', { file_id: fileId })
+}
+
+/**
+ * 生成故障树
+ * GET /api/v1/fault-tree/generate_tree?top_event=xxx
+ * @param {string} topEvent - 顶事件名称
+ */
+export const generateFaultTree = (topEvent) => {
+  return api.get('/fault-tree/generate_tree', {
+    params: { top_event: topEvent }
   })
 }
 
-// 知识提取
-export const extractKnowledge = (fileId) => {
-  return api.post('/knowledge/extract', null, { params: { file_id: fileId } })
-}
-
-// 获取提取进度
-export const getExtractProgress = (taskId) => {
-  return api.get(`/knowledge/extract/progress/${taskId}`)
-}
-
-// 生成故障树
-export const generateFaultTree = (data) => {
-  return api.post('/fault/tree/generate', data)
-}
-
-// 优化故障树
+/**
+ * 优化故障树（专家修正）
+ * POST /api/v1/fault-tree/optimize
+ * @param {Object} data - 修正数据
+ */
 export const optimizeFaultTree = (data) => {
-  return api.post('/fault/tree/optimize', data)
+  return api.post('/fault-tree/optimize', data)
 }
 
-// 导出故障树
-export const exportFaultTree = (treeId, format) => {
-  return api.get(`/fault/tree/${treeId}/export`, { params: { format } })
+/**
+ * 导出故障树
+ * GET /api/v1/fault-tree/export?tree_id=xxx&format=json
+ * @param {string} treeId - 树 ID
+ * @param {string} format - 导出格式 (json/png/svg)
+ */
+export const exportFaultTree = (treeId, format = 'json') => {
+  return api.get('/fault-tree/export', {
+   params: { tree_id: treeId, format }
+  })
 }
 
 export default api

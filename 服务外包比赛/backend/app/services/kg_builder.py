@@ -7,9 +7,7 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError, CypherSyntaxError, DatabaseError
 from typing import List, Any, Dict, Tuple
-# 顶部导入
 from app.core.config import settings
-from neo4j import GraphDatabase
 
 # 加载 .env 文件
 load_dotenv()
