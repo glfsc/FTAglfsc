@@ -166,14 +166,19 @@ async def health_check():
 # ================= 根路径 =================
 @app.get("/")
 async def root():
-    return {
-        "message": "故障树智能生成系统API服务运行中",
+  return {
+        "message": "故障树智能生成系统 API 服务运行中",
         "docs": "/docs",
         "health": "/api/health",
-        "fault_tree_api": "/api/v1/fault-tree (POST /generate 需 body: { \"knowledge_id\": \"\", \"top_event\": \"登机梯故障\" })"
+        "fault_tree_api": "/api/v1/fault-tree (POST /generate 需 body: { \"knowledge_id\": \"\", \"top_event\": \"登机梯故障\" ))"
     }
 
 # ================= 启动入口（保留主项目的启动方式） =================
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "main:app", 
+        host="0.0.0.0", 
+        port=8000, 
+      reload=True
+    )

@@ -527,6 +527,37 @@ class FaultTreeGenerator:
             
             return layout
 
+    def _calculate_node_probability(self, type_code: str, node_name: str) -> Tuple[float, float]:
+        """
+        根据节点类型计算故障概率
+        
+        设计原则:
+            - 顶事件概率最低（系统级故障罕见）
+            - 中间事件概率中等（子系统故障）
+            - 底事件概率最高（组件级故障更常见）
+        
+        Args:
+            type_code: 节点类型码 ("1"=顶事件，"2"=中间事件，"3"=底事件)
+            node_name: 节点名称（用于为底事件生成差异化概率）
+            
+        Returns:
+            (probability, show_probability) 元组
+        """
+        if type_code == "1":  # 顶事件
+           return 1e-8, 0.000001
+        elif type_code == "2":  # 中间事件
+           return 1e-7, 0.00001
+        elif type_code == "3":  # 底事件
+            # 使用节点名称的哈希值生成差异化但确定的概率
+            # 范围：0.00001 ~ 0.00007 (对应 show: 0.001 ~ 0.007)
+            name_hash = hash(node_name) & 0x7FFFFFFF  # 确保为正数
+            probability = 0.00001 + (name_hash % 7) * 0.00001
+            show_probability = round(probability * 100, 3)
+            return probability, show_probability
+        else:
+            # 默认值（理论上不会发生）
+            return 1e-8, 0.000001
+
     def _infer_node_type_from_topology(self, G: nx.DiGraph, node_name: str) -> str:
         """
         基于图拓扑结构自动推断节点类型
@@ -790,6 +821,9 @@ class FaultTreeGenerator:
             # 判断是否为逻辑门节点
             is_gate_node = node_name.startswith('[AND 门]') or node_name.startswith('[OR 门]')
             
+            # 【修复】根据节点类型计算合理的概率值
+            probability, show_probability = self._calculate_node_probability(type_code, node_name)
+            
             # 构建完整的 event 对象（参考标准格式）
             # 【修复】即使是逻辑门节点，也必须返回完整的 event 结构，仅清空其具体业务数值
             event_obj = {
@@ -798,8 +832,8 @@ class FaultTreeGenerator:
                 "description": "系统自动推导的逻辑门节点" if is_gate_node else "",
                 "errorLevel": "",
                 "priority": 0,
-                "probability": 1e-8,
-                "showProbability": 0.000001,
+                "probability": probability,  # 【修复】使用计算的动态值
+                "showProbability": show_probability,  # 【修复】使用计算的动态值
                 "rules": {} if is_gate_node else {
                     "deviceTypeId": "",  # 【修复】置空，避免前端误用硬编码 ID"114"导致报错
                     "measurePointName": "",

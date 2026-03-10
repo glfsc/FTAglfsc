@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 // 创建 axios 实例
 const api = axios.create({
   baseURL: '/api/v1',
-  timeout: 60000,
+  timeout: 120000,  // 增加到 120 秒
   headers: {
     'Content-Type': 'application/json'
   }
@@ -82,11 +82,33 @@ export const extractKnowledge = (fileId) => {
  * 生成故障树
  * GET /api/v1/fault-tree/generate_tree?top_event=xxx
  * @param {string} topEvent - 顶事件名称
+ * @param {boolean} export - 是否导出为文件
  */
-export const generateFaultTree = (topEvent) => {
+export const generateFaultTree = (topEvent, exportToFile = false) => {
   return api.get('/fault-tree/generate_tree', {
-    params: { top_event: topEvent }
+    params: {
+      top_event: topEvent,
+      export: exportToFile
+    }
   })
+}
+
+/**
+ * 下载故障树 JSON 文件
+ * @param {string} filename - 文件名
+ */
+export const downloadFaultTreeFile = (filename) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  return `${baseUrl}/fault-tree/download/${filename}`
+}
+
+/**
+ * 生成并下载故障树（一键操作）
+ * @param {string} topEvent - 顶事件名称
+ */
+export const generateAndDownloadFaultTree = (topEvent) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  return `${baseUrl}/fault-tree/generate_and_download?top_event=${encodeURIComponent(topEvent)}`
 }
 
 /**

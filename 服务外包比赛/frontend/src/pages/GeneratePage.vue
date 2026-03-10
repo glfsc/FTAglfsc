@@ -67,6 +67,28 @@
             <el-icon><Upload /></el-icon>
             {{ uploading ? '处理中...' : '上传三元组并生成故障树' }}
           </el-button>
+
+          <!-- 新增：下载和查看按钮 -->
+          <div v-if="generatedTreeData" style="margin-top: 10px; display: flex; gap: 10px;">
+            <el-button
+              type="success"
+              style="flex: 1;"
+              @click="downloadFaultTree"
+              size="large"
+            >
+              <el-icon><Download /></el-icon>
+              下载故障树 JSON
+            </el-button>
+            <el-button
+              type="info"
+              style="flex: 1;"
+              @click="viewGeneratedJSON"
+              size="large"
+            >
+              <el-icon><Document /></el-icon>
+              查看 JSON 内容
+            </el-button>
+          </div>
         </el-card>
       </el-col>
 
@@ -146,14 +168,15 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Upload, Document, InfoFilled, Clock, Search } from '@element-plus/icons-vue'
-import { uploadKnowledge, generateFaultTree } from '@/api'
+import { Upload, Document, InfoFilled, Clock, Download } from '@element-plus/icons-vue'
+import { uploadKnowledge, generateFaultTree, generateAndDownloadFaultTree } from '@/api'
 
 const router = useRouter()
 const jsonInput = ref('')
 const uploading = ref(false)
 const uploadHistory = ref([])
-const topEventInput = ref('登机梯无法展开')  // 默认顶事件
+const topEventInput = ref('登机梯无法展开')
+const generatedTreeData = ref(null)  // 存储生成的故障树数据
 
 const validateAndUpload = async () => {
   if (!jsonInput.value.trim()) {
@@ -164,11 +187,10 @@ const validateAndUpload = async () => {
   let triplets
   try {
     triplets = JSON.parse(jsonInput.value)
-    // 支持两种格式：直接数组或包含 triplets 字段的对象
     if (Array.isArray(triplets)) {
       // 直接数组格式
     } else if (triplets.triplets && Array.isArray(triplets.triplets)) {
-      triplets = triplets.triplets  // 提取数组
+      triplets = triplets.triplets
     } else {
       throw new Error('JSON 必须是三元组数组格式')
     }
@@ -188,27 +210,28 @@ const validateAndUpload = async () => {
       duration: 2000
     })
 
-    // 步骤 2: 自动生成故障树（关键步骤）
+    // 步骤 2: 自动生成故障树
     if (topEventInput.value) {
       ElMessage.info(`🌲 正在生成故障树（顶事件：${topEventInput.value}）...`)
 
       try {
-        const treeResponse = await generateFaultTree(topEventInput.value)
+        const treeResponse = await generateFaultTree(topEventInput.value, true)
 
         ElMessage.success('✅ 故障树生成成功！')
 
-        // 步骤 3: 存储生成的故障树数据到 sessionStorage
-        // 这样其他页面（如 VerifyPage）可以获取并显示
+        // 存储生成的故障树数据
         if (treeResponse.data) {
+          generatedTreeData.value = treeResponse.data
           sessionStorage.setItem('generatedFaultTree', JSON.stringify(treeResponse.data))
           sessionStorage.setItem('topEventName', topEventInput.value)
 
-          ElMessage.info('正在跳转到故障树页面...')
-
-          // 步骤 4: 自动跳转到故障树显示/编辑页面
-          setTimeout(() => {
-            router.push('/verify')
-          }, 1000)
+          // 显示下载选项
+          ElMessage({
+            message: '故障树已生成！您可以下载 JSON 文件查看结果',
+            type: 'success',
+            duration: 5000,
+            showClose: true
+          })
         }
 
       } catch (treeError) {
@@ -228,10 +251,9 @@ const validateAndUpload = async () => {
       skipped: uploadResponse.skipped || 0,
       duplicates: uploadResponse.duplicates || 0,
       status: 'success',
-      treeGenerated: true
+      treeGenerated: !!generatedTreeData.value
     })
 
-    // 清空输入
     jsonInput.value = ''
 
   } catch (error) {
@@ -250,6 +272,48 @@ const validateAndUpload = async () => {
   } finally {
     uploading.value = false
   }
+}
+
+// 新增：下载故障树 JSON 文件
+const downloadFaultTree = async () => {
+  if (!topEventInput.value) {
+    ElMessage.warning('请先输入顶事件名称')
+    return
+  }
+
+  try {
+    ElMessage.info('正在生成并下载故障树 JSON...')
+
+    // 创建下载链接
+    const downloadUrl = generateAndDownloadFaultTree(topEventInput.value)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `fault_tree_${topEventInput.value}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    ElMessage.success('✅ 下载已开始！')
+
+  } catch (error) {
+    console.error('下载失败:', error)
+    ElMessage.error(`下载失败：${error.message}`)
+  }
+}
+
+// 新增：查看生成的 JSON（在新窗口打开）
+const viewGeneratedJSON = () => {
+  if (!generatedTreeData.value) {
+    ElMessage.warning('暂无生成的故障树数据')
+    return
+  }
+
+  // 在新窗口显示 JSON
+  const jsonWindow = window.open('_blank')
+  jsonWindow.document.write('<pre style="font-family: monospace; background: #f5f5f5; padding: 20px;">')
+  jsonWindow.document.write(JSON.stringify(generatedTreeData.value, null, 2))
+  jsonWindow.document.write('</pre>')
+  jsonWindow.document.title = '故障树 JSON 预览'
 }
 </script>
 

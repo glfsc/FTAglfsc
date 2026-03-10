@@ -157,22 +157,7 @@ class FaultTreeKGBuilder:
         }])
 
     def insert_triplets_batch(self, triplets: List[Any]) -> int:
-        """
-        【终极完美版】高性能批量写入：
-        - 修复原子性失效 Bug：所有数据在单个事务中提交
-        - 修复 AttributeError 崩溃：使用 isinstance 安全判定类型
-        - 修复大小写容错逻辑 Bug：真正实现格式纠偏
-        - 增加智能纠偏映射字典：自动纠正大模型格式幻觉
-        - 【新增】NaN 防御：利用比较特性拦截越界、NaN 幻觉
-        - 【新增】内存级去重：指纹追踪器防止 LLM 复读机式输出
-        - 增加置信度纵深防御：强制截断越界值
-        - 严防超级节点污染：缺失名称的三元组直接丢弃
-        - 单条异常隔离：保障整批数据不会因 1 条不合规而全盘崩溃
-        - 强制 str() 转换：杜绝大模型输出数字/布尔值导致的崩溃
-        - 来源标准化去重：防止同一来源因大小写不同被重复计算
-        - 【修复】伪空值污染：引入正则表达式和黑名单拦截
-        - 【修复】格式纠偏漏网之鱼：通过正则清洗实现极致扁平化匹配
-        """
+
         if not triplets:
             logger.warning("批量插入列表为空")
             return 0
@@ -324,28 +309,17 @@ class FaultTreeKGBuilder:
                     """使用受管事务执行所有 chunk，确保原子性"""
                     inserted = 0
                     for (sub_type, rel_type, obj_type), batch_rows in grouped_data.items():
-                        # 动态拼接安全的类型白名单变量，规避 Cypher 参数化限制
                         query = f"""
                         UNWIND $batch AS row
-                        
-                        // 保证物理唯一性
                         MERGE (s:FaultNode {{name: row.sub_name}})
                         SET s:{sub_type}
-                        
                         MERGE (o:FaultNode {{name: row.obj_name}})
                         SET o:{obj_type}
-                        
-                        // 建立关联
                         MERGE (s)-[r:{rel_type}]->(o)
-                        
                         ON CREATE SET 
                             r.confidence = row.confidence, 
                             r.sources = [row.source]
-                            
                         ON MATCH SET 
-                            // 【核心算法修复】数学与工程的完美融合：
-                            // 1. 同源更新：如果来源相同，视为纠正数据，取最大值
-                            // 2. 异源印证：如果来源不同，触发 D-S 证据融合公式，提升整体置信度
                             r.confidence = CASE 
                                 WHEN row.source IN COALESCE(r.sources, []) 
                                 THEN CASE 
@@ -354,28 +328,30 @@ class FaultTreeKGBuilder:
                                 END
                                 ELSE round(COALESCE(r.confidence, 0.0) + row.confidence - (COALESCE(r.confidence, 0.0) * row.confidence), 3)
                             END,
-                            // 来源去重追加
                             r.sources = CASE 
                                 WHEN row.source IN COALESCE(r.sources, []) 
                                 THEN r.sources 
                                 ELSE COALESCE(r.sources, []) + [row.source] 
                             END
                         """
-                        
-                        # 为了防止极大数据量导致内存爆炸，建议将大 batch 切片（每 2000 条一次事务）
+
                         CHUNK_SIZE = 2000
                         for i in range(0, len(batch_rows), CHUNK_SIZE):
                             chunk = batch_rows[i:i + CHUNK_SIZE]
+                            logger.debug(f"正在处理第 {i // CHUNK_SIZE + 1} 批，共 {len(chunk)} 条三元组")
+                            start_time = time.time()  # time 应已在文件顶部导入
                             tx.run(query, batch=chunk)
+                            elapsed = time.time() - start_time
+                            logger.debug(f"第 {i // CHUNK_SIZE + 1} 批处理完成，耗时 {elapsed:.2f} 秒")
                             inserted += len(chunk)
-                    return inserted
-                
-                # 使用 execute_write 将所有 chunk 包裹在同一个事务上下文中，确保原子性
-                inserted_count = session.execute_write(execute_chunks)
-                        
+                    return inserted  # ✅ 正确位置：函数末尾，与外层 for 对齐
+
+                # ✅ 关键补充：执行事务函数并获取结果
+                inserted_count = session.write_transaction(execute_chunks)
+
         except Exception as e:
-            logger.error(f"数据库批量写入事务失败：{str(e)}")
-            raise RuntimeError(f"图数据库写入失败：{str(e)}") from e
+            logger.error(f"插入数据时发生错误: {e}")
+            raise
 
         # 10. 结构化日志输出
         log_msg = f"批量插入处理完成：有效入库 {inserted_count} 条"

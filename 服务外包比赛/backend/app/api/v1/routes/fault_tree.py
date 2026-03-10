@@ -4,11 +4,16 @@
 故障树 API 路由：
 - 上传知识三元组入库
 - 生成可视化故障树 JSON
+- 导出故障树到文件
 
 服务通过依赖注入从 app.state 获取，与 main 中 lifespan 初始化的 Neo4j 连接共用。
 """
 
 from fastapi import APIRouter, HTTPException, Request, Depends, Query
+from fastapi.responses import FileResponse
+import json
+import os
+from datetime import datetime
 
 from app.services.fault_tree_service import FaultTreeService
 from app.models.schemas import (
@@ -58,19 +63,103 @@ async def upload_knowledge(
 async def generate_tree(
     top_event: str = Query(..., description="顶事件名称"),
     service: FaultTreeService = Depends(get_fault_tree_service),
+    export: bool = Query(False, description="是否导出为文件")
 ):
     """
     按交付模块规范：根据顶事件生成可渲染的故障树 JSON。
     响应格式：{status, data}
+    
+    Args:
+        top_event: 顶事件名称
+        export: 是否同时导出为 JSON 文件
     """
     try:
         ft_json = service.tree_generator.build_tree_json(top_event_name=top_event)
         # 知识写入后/生成后建议清缓存，确保后续获取最新数据
         service.tree_generator.clear_cache(top_event)
+        
+        # 如果需要导出文件
+        if export:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"fault_tree_{top_event.replace(' ', '_')}_{timestamp}.json"
+            output_path = os.path.join("exports", filename)
+            
+            # 确保导出目录存在
+            os.makedirs("exports", exist_ok=True)
+            
+            # 保存到文件
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(ft_json, f, ensure_ascii=False, indent=2)
+            
+            return {
+                "status": "success",
+                "data": ft_json,
+                "export_path": output_path,
+                "download_url": f"/api/v1/fault-tree/download/{filename}"
+            }
+        
         return {"status": "success", "data": ft_json}
     except HTTPException:
         raise
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"算法执行失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"算法执行失败：{str(e)}")
+
+# 新增：下载故障树文件接口
+@router.get("/download/{filename}")
+async def download_fault_tree(filename: str):
+    """
+    下载生成的故障树 JSON 文件
+    """
+    file_path = os.path.join("exports", filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+    
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+# 新增：直接生成并下载故障树（一键操作）
+@router.post("/generate_and_download")
+async def generate_and_download(
+    top_event: str = Query(..., description="顶事件名称"),
+    service: FaultTreeService = Depends(get_fault_tree_service)
+):
+    """
+    生成故障树并直接返回可下载的 JSON 文件
+    """
+    try:
+        ft_json = service.tree_generator.build_tree_json(top_event_name=top_event)
+        service.tree_generator.clear_cache(top_event)
+        
+        # 生成临时文件名
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"fault_tree_{top_event.replace(' ', '_')}_{timestamp}.json"
+        output_path = os.path.join("exports", filename)
+        
+        # 确保导出目录存在
+        os.makedirs("exports", exist_ok=True)
+        
+        # 保存到文件
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(ft_json, f, ensure_ascii=False, indent=2)
+        
+        return FileResponse(
+            path=output_path,
+            filename=filename,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"算法执行失败：{str(e)}")
