@@ -1,7 +1,7 @@
 # app/api/v1/routes/fault_tree.py
 
 """
-故障树 API 路由（交付版）：
+故障树 API 路由：
 - 上传知识三元组入库
 - 生成可视化故障树 JSON
 
