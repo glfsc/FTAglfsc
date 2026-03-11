@@ -1,0 +1,67 @@
+{
+    "triplets": [
+        {
+            "subject_name": "电源模块 A",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "系统宕机",
+            "object_type": "TopEvent",
+            "confidence": 0.98,
+            "source": "若电源模块 A 失效，则会导致系统宕机。"
+        },
+        {
+            "subject_name": "控制板 B",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "系统宕机",
+            "object_type": "TopEvent",
+            "confidence": 0.98,
+            "source": "若控制板 B 夜失效，也会导致系统宕机。"
+        },
+        {
+            "subject_name": "电源模块 A",
+            "subject_type": "BasicEvent",
+            "relation": "jointly_resultsIn",
+            "object_name": "组合故障路径1",
+            "object_type": "IntermediateEvent",
+            "confidence": 1.0,
+            "source": "电源模块 A 和控制板 B 同时失效时，系统必然宕机。"
+        },
+        {
+            "subject_name": "控制板 B",
+            "subject_type": "BasicEvent",
+            "relation": "jointly_resultsIn",
+            "object_name": "组合故障路径1",
+            "object_type": "IntermediateEvent",
+            "confidence": 1.0,
+            "source": "电源模块 A 和控制板 B 同时失效时，系统必然宕机。"
+        },
+        {
+            "subject_name": "组合故障路径1",
+            "subject_type": "IntermediateEvent",
+            "relation": "resultsIn",
+            "object_name": "系统宕机",
+            "object_type": "TopEvent",
+            "confidence": 0.98,
+            "source": "电源模块 A 和控制板 B 同时失效时，系统必然宕机。"
+        },
+        {
+            "subject_name": "线缆老化",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "电源模块 A",
+            "object_type": "BasicEvent",
+            "confidence": 0.9,
+            "source": "线缆老化会导致电源模块故障。"
+        },
+        {
+            "subject_name": "温度过高",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "控制板 B",
+            "object_type": "BasicEvent",
+            "confidence": 0.9,
+            "source": "温度过高会导致控制板 B 失效。"
+        }
+    ]
+}

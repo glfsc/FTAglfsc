@@ -1,0 +1,76 @@
+{
+    "triplets": [
+        {
+            "subject_name": "液压泵损坏",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "系统压力不足",
+            "object_type": "IntermediateEvent",
+            "confidence": 0.98,
+            "source": "若[液压泵损坏]或[油管破裂]，均会导致[系统压力不足]。"
+        },
+        {
+            "subject_name": "油管破裂",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "系统压力不足",
+            "object_type": "IntermediateEvent",
+            "confidence": 0.98,
+            "source": "若[液压泵损坏]或[油管破裂]，均会导致[系统压力不足]。"
+        },
+        {
+            "subject_name": "系统压力不足",
+            "subject_type": "IntermediateEvent",
+            "relation": "jointly_resultsIn",
+            "object_name": "执行机构失效路径",
+            "object_type": "IntermediateEvent",
+            "confidence": 1.0,
+            "source": "若[系统压力不足]且[控制阀卡滞]同时发生，会导致[执行机构失效]。"
+        },
+        {
+            "subject_name": "控制阀卡滞",
+            "subject_type": "BasicEvent",
+            "relation": "jointly_resultsIn",
+            "object_name": "执行机构失效路径",
+            "object_type": "IntermediateEvent",
+            "confidence": 1.0,
+            "source": "若[系统压力不足]且[控制阀卡滞]同时发生，会导致[执行机构失效]。"
+        },
+        {
+            "subject_name": "执行机构失效路径",
+            "subject_type": "IntermediateEvent",
+            "relation": "resultsIn",
+            "object_name": "执行机构失效",
+            "object_type": "TopEvent",
+            "confidence": 0.98,
+            "source": "若[系统压力不足]且[控制阀卡滞]同时发生，会导致[执行机构失效]。"
+        },
+        {
+            "subject_name": "电机故障",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "液压泵损坏",
+            "object_type": "BasicEvent",
+            "confidence": 0.9,
+            "source": "电机故障会导致液压泵损坏。"
+        },
+        {
+            "subject_name": "油液污染",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "控制阀卡滞",
+            "object_type": "BasicEvent",
+            "confidence": 0.9,
+            "source": "油液污染会导致控制阀卡滞。"
+        },
+        {
+            "subject_name": "外力撞击",
+            "subject_type": "BasicEvent",
+            "relation": "resultsIn",
+            "object_name": "油管破裂",
+            "object_type": "BasicEvent",
+            "confidence": 0.9,
+            "source": "外力撞击会导致油管破裂。"
+        }
+    ]
+}

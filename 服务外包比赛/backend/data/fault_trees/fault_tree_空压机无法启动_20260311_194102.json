@@ -1,0 +1,882 @@
+{
+  "attr": {
+    "background": "#fff",
+    "fontColor": "#000",
+    "eventColor": "#000",
+    "eventFillColor": "#fff",
+    "gateColor": "#000",
+    "gateFillColor": "#fff",
+    "linkColor": "#456",
+    "eventCode": true,
+    "eventProbability": false,
+    "containerX": -53,
+    "containerY": -74,
+    "width": 1920,
+    "height": 1080
+  },
+  "nodeList": [
+    {
+      "id": "node-b810500f",
+      "name": "电气驱动系统故障",
+      "type": "2",
+      "x": 1485,
+      "y": 234,
+      "gate": "2",
+      "event": {
+        "id": "83950809c9874a91",
+        "name": "电气驱动系统故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-07,
+        "showProbability": 1e-05,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-13114e47",
+      "name": "空压机无法启动",
+      "type": "1",
+      "x": 960,
+      "y": -72,
+      "gate": "2",
+      "event": {
+        "id": "b0d2b011bb364a22",
+        "name": "空压机无法启动",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-08,
+        "showProbability": 1e-06,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-1c65d7d6",
+      "name": "主电机故障",
+      "type": "3",
+      "x": 2885,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "ee6562eb0bba4cf9",
+        "name": "主电机故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 3.0000000000000004e-05,
+        "showProbability": 0.003,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-23031102",
+      "name": "变频器故障",
+      "type": "3",
+      "x": 2535,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "c9f45afcdb424490",
+        "name": "变频器故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 5e-05,
+        "showProbability": 0.005,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-5df5bad4",
+      "name": "电源异常",
+      "type": "3",
+      "x": 2185,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "d719fe1cbc094269",
+        "name": "电源异常",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-05,
+        "showProbability": 0.001,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-6f0d27e9",
+      "name": "控制系统故障",
+      "type": "2",
+      "x": 1135,
+      "y": 234,
+      "gate": "2",
+      "event": {
+        "id": "bf0e75490eb54f1b",
+        "name": "控制系统故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-07,
+        "showProbability": 1e-05,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-29b2cdc3",
+      "name": "PLC控制程序异常",
+      "type": "3",
+      "x": 1835,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "efb3a2f3ccb34414",
+        "name": "PLC控制程序异常",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 3.0000000000000004e-05,
+        "showProbability": 0.003,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-39db3fe2",
+      "name": "通讯网络故障",
+      "type": "3",
+      "x": 1485,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "33fece04131d49ff",
+        "name": "通讯网络故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 3.0000000000000004e-05,
+        "showProbability": 0.003,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-ffe34ff6",
+      "name": "关键传感器故障",
+      "type": "3",
+      "x": 1135,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "a9bfa49de2f44177",
+        "name": "关键传感器故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 3.0000000000000004e-05,
+        "showProbability": 0.003,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-8fe35448",
+      "name": "保护联锁故障",
+      "type": "2",
+      "x": 785,
+      "y": 234,
+      "gate": "2",
+      "event": {
+        "id": "6bf0b909c6a346a2",
+        "name": "保护联锁故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-07,
+        "showProbability": 1e-05,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-064dde7d",
+      "name": "保护联锁触发",
+      "type": "2",
+      "x": 785,
+      "y": 540,
+      "gate": "2",
+      "event": {
+        "id": "c1e6cf94b4e44187",
+        "name": "保护联锁触发",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-07,
+        "showProbability": 1e-05,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-edd65204",
+      "name": "高温保护触发",
+      "type": "3",
+      "x": 1485,
+      "y": 846,
+      "gate": "",
+      "event": {
+        "id": "99d933783da24538",
+        "name": "高温保护触发",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 7.000000000000001e-05,
+        "showProbability": 0.007,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-2d0e1144",
+      "name": "高压保护触发",
+      "type": "3",
+      "x": 1135,
+      "y": 846,
+      "gate": "",
+      "event": {
+        "id": "c34bcc90b88e4db7",
+        "name": "高压保护触发",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 7.000000000000001e-05,
+        "showProbability": 0.007,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-30e944cd",
+      "name": "润滑油油位过低保护触发",
+      "type": "3",
+      "x": 785,
+      "y": 846,
+      "gate": "",
+      "event": {
+        "id": "04a153ceccd14b95",
+        "name": "润滑油油位过低保护触发",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 5e-05,
+        "showProbability": 0.005,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-6b1703eb",
+      "name": "急停按钮触发",
+      "type": "3",
+      "x": 435,
+      "y": 846,
+      "gate": "",
+      "event": {
+        "id": "b4727048f686419f",
+        "name": "急停按钮触发",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 6e-05,
+        "showProbability": 0.006,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-4d7deae5",
+      "name": "急停按钮被触发",
+      "type": "3",
+      "x": 435,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "ffec36ded1514b5b",
+        "name": "急停按钮被触发",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 6e-05,
+        "showProbability": 0.006,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-54f66127",
+      "name": "气路系统故障",
+      "type": "2",
+      "x": 435,
+      "y": 234,
+      "gate": "2",
+      "event": {
+        "id": "0f06aa37fd35411c",
+        "name": "气路系统故障",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-07,
+        "showProbability": 1e-05,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-c0f16bf9",
+      "name": "进气系统堵塞",
+      "type": "3",
+      "x": 85,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "04ae88f1bc904dd0",
+        "name": "进气系统堵塞",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 6e-05,
+        "showProbability": 0.006,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-7ee24d5c",
+      "name": "排气系统堵塞",
+      "type": "3",
+      "x": -265,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "9c12532b2d1543ca",
+        "name": "排气系统堵塞",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 6e-05,
+        "showProbability": 0.006,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-e0f7a724",
+      "name": "储气罐压力检测异常",
+      "type": "3",
+      "x": -615,
+      "y": 540,
+      "gate": "",
+      "event": {
+        "id": "024f69373e714a7c",
+        "name": "储气罐压力检测异常",
+        "description": "",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 5e-05,
+        "showProbability": 0.005,
+        "rules": {
+          "deviceTypeId": "",
+          "measurePointName": "",
+          "symbol": "",
+          "thresholds": [],
+          "duration": ""
+        },
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    },
+    {
+      "id": "node-5ba1940a",
+      "name": "[AND 门] 保护联锁故障",
+      "type": "2",
+      "x": -965,
+      "y": 540,
+      "gate": "1",
+      "event": {
+        "id": "6194fcc5bfbb41a3",
+        "name": "",
+        "description": "系统自动推导的逻辑门节点",
+        "errorLevel": "",
+        "priority": 0,
+        "probability": 1e-07,
+        "showProbability": 1e-05,
+        "rules": {},
+        "investigateMethod": "",
+        "documents": []
+      },
+      "transfer": ""
+    }
+  ],
+  "linkList": [
+    {
+      "id": "edge-acbf2a8b15a64724",
+      "type": "link",
+      "sourceId": "node-b810500f",
+      "targetId": "node-13114e47",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "若设备无法正常启动，通常可能由电气驱动系统、气路系统、控制系统以及保护联锁等多个方面的故障引起。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-8389125d9b70476a",
+      "type": "link",
+      "sourceId": "node-1c65d7d6",
+      "targetId": "node-b810500f",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "主电机故障是导致空压机启动失败的常见原因。例如电机绕组发生短路、轴承损坏或电机温度过高触发热保护时，驱动系统会阻止设备启动。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-e3059c2da9b24d7c",
+      "type": "link",
+      "sourceId": "node-23031102",
+      "targetId": "node-b810500f",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "此外，变频器故障也可能造成启动失败，例如变频器发生过流保护、内部散热风扇损坏或控制板通讯异常等情况。 | 变频器故障也可能造成启动失败，例如变频器发生过流保护、内部散热风扇损坏或控制板通讯异常等情况。",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "edge-be6b007bcfd1435b",
+      "type": "link",
+      "sourceId": "node-5df5bad4",
+      "targetId": "node-b810500f",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "电源异常同样会影响系统运行，例如三相电压不平衡、供电电压过低或主断路器跳闸等问题。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-a9cb889a03214ae4",
+      "type": "link",
+      "sourceId": "node-6f0d27e9",
+      "targetId": "node-13114e47",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "若设备无法正常启动，通常可能由电气驱动系统、气路系统、控制系统以及保护联锁等多个方面的故障引起。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-86bbbd15df114838",
+      "type": "link",
+      "sourceId": "node-29b2cdc3",
+      "targetId": "node-6f0d27e9",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "例如PLC控制程序异常可能导致启动逻辑无法执行。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-296e1fe56b934f4f",
+      "type": "link",
+      "sourceId": "node-39db3fe2",
+      "targetId": "node-6f0d27e9",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "通讯网络故障，如PROFINET通讯中断或IO模块离线，也会导致控制信号无法正确传输。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-3c1438361484457b",
+      "type": "link",
+      "sourceId": "node-ffe34ff6",
+      "targetId": "node-6f0d27e9",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "另外，当关键传感器出现故障时，例如压力传感器失效或温度传感器信号丢失，系统会认为设备状态异常，从而拒绝启动。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-69d3501defa544ad",
+      "type": "link",
+      "sourceId": "node-8fe35448",
+      "targetId": "node-13114e47",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "若设备无法正常启动，通常可能由电气驱动系统、气路系统、控制系统以及保护联锁等多个方面的故障引起。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-36812029eb2f4234",
+      "type": "link",
+      "sourceId": "node-064dde7d",
+      "targetId": "node-8fe35448",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "最后，保护联锁被触发也会直接阻止空压机启动。例如当设备检测到高温保护、高压保护或润滑油油位过低保护时，系统会自动锁定启动功能。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-49db2a6188804ab7",
+      "type": "link",
+      "sourceId": "node-064dde7d",
+      "targetId": "node-13114e47",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "若设备无法正常启动，通常可能由电气驱动系统、气路系统、控制系统以及保护联锁等多个方面的故障引起。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-b8f587bb0b5d4769",
+      "type": "link",
+      "sourceId": "node-edd65204",
+      "targetId": "node-064dde7d",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "例如当设备检测到高温保护、高压保护或润滑油油位过低保护时，系统会自动锁定启动功能。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-61fb47b9d34d4757",
+      "type": "link",
+      "sourceId": "node-edd65204",
+      "targetId": "node-5ba1940a",
+      "edgeType": "jointly_resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "例如当设备检测到高温保护、高压保护或润滑油油位过低保护时，系统会自动锁定启动功能。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-06aeacddecee4939",
+      "type": "link",
+      "sourceId": "node-2d0e1144",
+      "targetId": "node-064dde7d",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "例如当设备检测到高温保护、高压保护或润滑油油位过低保护时，系统会自动锁定启动功能。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-49651fbb0d494de0",
+      "type": "link",
+      "sourceId": "node-2d0e1144",
+      "targetId": "node-5ba1940a",
+      "edgeType": "jointly_resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "例如当设备检测到高温保护、高压保护或润滑油油位过低保护时，系统会自动锁定启动功能。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-f5398bdd9ef94a3a",
+      "type": "link",
+      "sourceId": "node-30e944cd",
+      "targetId": "node-064dde7d",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "例如当设备检测到高温保护、高压保护或润滑油油位过低保护时，系统会自动锁定启动功能。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-c87df1b808a44bc9",
+      "type": "link",
+      "sourceId": "node-30e944cd",
+      "targetId": "node-5ba1940a",
+      "edgeType": "jointly_resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "例如当设备检测到高温保护、高压保护或润滑油油位过低保护时，系统会自动锁定启动功能。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-d651707369c8431f",
+      "type": "link",
+      "sourceId": "node-6b1703eb",
+      "targetId": "node-064dde7d",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "此外，如果急停按钮被触发，设备同样无法启动。 | 如果急停按钮被触发，设备同样无法启动。",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "edge-ec4d870eff2045d0",
+      "type": "link",
+      "sourceId": "node-6b1703eb",
+      "targetId": "node-8fe35448",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "此外，如果急停按钮被触发，设备同样无法启动。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-0f61ab03d68f4189",
+      "type": "link",
+      "sourceId": "node-4d7deae5",
+      "targetId": "node-8fe35448",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "此外，如果急停按钮被触发，设备同样无法启动。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-9e77efc3d83041f7",
+      "type": "link",
+      "sourceId": "node-54f66127",
+      "targetId": "node-13114e47",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "若设备无法正常启动，通常可能由电气驱动系统、气路系统、控制系统以及保护联锁等多个方面的故障引起。",
+        "confidence": 0.98
+      }
+    },
+    {
+      "id": "edge-ffc8d319907543b0",
+      "type": "link",
+      "sourceId": "node-c0f16bf9",
+      "targetId": "node-54f66127",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "其次，气路系统异常也会导致空压机无法启动。例如进气系统堵塞时，可能是进气过滤器严重堵塞或进气阀发生卡滞。 | 例如进气系统堵塞时，可能是进气过滤器严重堵塞或进气阀发生卡滞。",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "edge-db34f11d7abf486e",
+      "type": "link",
+      "sourceId": "node-7ee24d5c",
+      "targetId": "node-54f66127",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "排气系统方面，如果排气管道堵塞或最小压力阀出现故障，也可能导致系统启动条件无法满足。 | 如果排气管道堵塞或最小压力阀出现故障，也可能导致系统启动条件无法满足。",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "edge-c83bb118304a4305",
+      "type": "link",
+      "sourceId": "node-e0f7a724",
+      "targetId": "node-54f66127",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "此外，当储气罐压力检测异常时，例如压力传感器失效或安全阀提前开启，也会影响系统启动逻辑。 | 当储气罐压力检测异常时，例如压力传感器失效或安全阀提前开启，也会影响系统启动逻辑。",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "edge-ed550f7ea47c438f",
+      "type": "link",
+      "sourceId": "node-5ba1940a",
+      "targetId": "node-8fe35448",
+      "edgeType": "resultsIn",
+      "isCondition": false,
+      "traceability": {
+        "evidence": "混合逻辑推导分离",
+        "confidence": 1.0
+      }
+    }
+  ]
+}
