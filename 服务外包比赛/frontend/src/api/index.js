@@ -72,10 +72,12 @@ export const uploadFile = async (file) => {
 /**
  * 提取知识
  * POST /api/v1/fault-tree/extract
- * @param {string} fileId - 文件 ID
+ * @param {Object} data - 提取请求数据
+ * @param {string} data.file_id - 文件 ID
+ * @param {string} data.mode - 处理模式 (legacy/multimodal)
  */
-export const extractKnowledge = (fileId) => {
-  return api.post('/fault-tree/extract', { file_id: fileId })
+export const extractKnowledge = (data) => {
+  return api.post('/fault-tree/extract', data)
 }
 
 /**
@@ -130,6 +132,17 @@ export const exportFaultTree = (treeId, format = 'json') => {
   return api.get('/fault-tree/export', {
    params: { tree_id: treeId, format }
   })
+}
+
+/**
+ * AI 对话接口
+ * POST /api/v1/ai/chat
+ * @param {Object} data - 对话请求数据
+ * @param {Array} data.messages - 消息历史
+ * @param {Object} data.context - 故障树上下文
+ */
+export const chatWithAI = (data) => {
+  return api.post('/ai/chat', data)
 }
 
 export default api

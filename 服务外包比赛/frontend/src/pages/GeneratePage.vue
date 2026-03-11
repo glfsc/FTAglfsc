@@ -1,8 +1,8 @@
 <template>
-  <div class="upload-page">
+  <div class="generate-page">
     <div class="page-header">
-      <h2><el-icon><Upload /></el-icon> 知识三元组上传</h2>
-      <p class="description">将结构化的故障知识三元组写入知识图谱</p>
+      <h2><el-icon><Upload /></el-icon> 知识三元组上传与故障树生成</h2>
+      <p class="description">将结构化的故障知识三元组写入知识图谱并生成可视化故障树</p>
     </div>
 
     <el-row :gutter="20">
@@ -68,7 +68,7 @@
             {{ uploading ? '处理中...' : '上传三元组并生成故障树' }}
           </el-button>
 
-          <!-- 新增：下载和查看按钮 -->
+          <!-- 操作按钮组 -->
           <div v-if="generatedTreeData" style="margin-top: 10px; display: flex; gap: 10px;">
             <el-button
               type="success"
@@ -77,7 +77,7 @@
               size="large"
             >
               <el-icon><Download /></el-icon>
-              下载故障树 JSON
+              下载 JSON
             </el-button>
             <el-button
               type="info"
@@ -86,7 +86,7 @@
               size="large"
             >
               <el-icon><Document /></el-icon>
-              查看 JSON 内容
+              查看内容
             </el-button>
           </div>
         </el-card>
@@ -161,15 +161,103 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 内嵌故障树可视化区域 - 始终显示 -->
+    <div class="visualization-section" v-if="generatedTreeData || treeNodes.length > 0">
+      <el-card class="viz-card" shadow="hover">
+        <template #header>
+          <div class="card-header">
+            <span><el-icon><DataAnalysis /></el-icon> 故障树可视化</span>
+            <el-tag v-if="generatedTreeData" type="success">已生成</el-tag>
+            <el-tag v-else type="info">等待生成</el-tag>
+          </div>
+        </template>
+
+        <div class="visualization-container">
+          <div class="tree-placeholder" v-if="!treeNodes.length && !generatedTreeData">
+            <el-empty description="请上传三元组并输入顶事件名称以生成故障树">
+              <template #image>
+                <el-icon :size="100"><DataAnalysis /></el-icon>
+              </template>
+            </el-empty>
+          </div>
+          <div class="tree-placeholder" v-else-if="!treeNodes.length && generatedTreeData">
+            <el-empty description="正在解析故障树数据...">
+              <el-button type="primary" @click="parseTreeData">重新加载</el-button>
+            </el-empty>
+          </div>
+          <div v-else class="tree-display">
+            <!-- 集成 VueFlow 组件 -->
+            <VueFlow
+              v-model:nodes="treeNodes"
+              v-model:edges="treeEdges"
+              :default-viewport="{ zoom: 0.8 }"
+              :min-zoom="0.2"
+              :max-zoom="4"
+              fit-view-on-init
+              class="fault-tree-flow"
+              :delete-key-code="'Backspace'"
+              @node-click="onNodeClick"
+              @edge-click="onEdgeClick"
+              @pane-click="onPaneClick"
+            >
+              <template #node-faultNode="props">
+                <FaultTreeNode 
+                  :id="props.id" 
+                  :data="props.data" 
+                  :selected="props.selected"
+                  :editable="true"
+                />
+              </template>
+              
+              <template #edge-default="props">
+                <GateEdge 
+                  v-bind="props"
+                />
+              </template>
+              
+              <Background pattern-color="#aaa" :gap="20" variant="dots" />
+              <Controls class="flow-controls" />
+            </VueFlow>
+          </div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar-actions">
+          <el-button-group>
+            <el-button @click="toggleAIChat">
+              <el-icon><ChatDotRound /></el-icon>
+              AI 助手
+            </el-button>
+            <el-button @click="handleAddNode">
+              <el-icon><Plus /></el-icon>
+              添加节点
+            </el-button>
+            <el-button @click="toggleAutoLayout">
+              <el-icon><Grid /></el-icon>
+              {{ isAutoLayoutEnabled ? '自动布局：开' : '自动布局：关' }}
+            </el-button>
+          </el-button-group>
+        </div>
+      </el-card>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Upload, Document, InfoFilled, Clock, Download } from '@element-plus/icons-vue'
+import { Upload, Document, InfoFilled, Clock, Download, View, DataAnalysis, ChatDotRound, Plus, Grid } from '@element-plus/icons-vue'
 import { uploadKnowledge, generateFaultTree, generateAndDownloadFaultTree } from '@/api'
+import dagre from 'dagre'
+import { VueFlow, MarkerType } from '@vue-flow/core'
+import { Background } from '@vue-flow/background'
+import { Controls } from '@vue-flow/controls'
+import FaultTreeNode from '../components/FaultTreeNode.vue'
+import GateEdge from '../components/GateEdge.vue'
+import '@vue-flow/core/dist/style.css'
+import '@vue-flow/controls/dist/style.css'
 
 const router = useRouter()
 const jsonInput = ref('')
@@ -177,6 +265,12 @@ const uploading = ref(false)
 const uploadHistory = ref([])
 const topEventInput = ref('登机梯无法展开')
 const generatedTreeData = ref(null)  // 存储生成的故障树数据
+const treeNodes = ref([])
+const treeEdges = ref([])
+const activeSidebar = ref(null) // 'ai', 'node', 'edge'
+const selectedNodeData = ref(null)
+const selectedEdgeData = ref(null)
+const isAutoLayoutEnabled = ref(true)
 
 const validateAndUpload = async () => {
   if (!jsonInput.value.trim()) {
@@ -315,38 +409,278 @@ const viewGeneratedJSON = () => {
   jsonWindow.document.write('</pre>')
   jsonWindow.document.title = '故障树 JSON 预览'
 }
+
+// 解析故障树数据
+const parseTreeData = (treeData = generatedTreeData.value) => {
+  if (!treeData || !treeData.nodeList || !treeData.linkList) {
+    ElMessage.warning('无效的故障树数据')
+    return
+  }
+  
+  // 转换节点数据
+  treeNodes.value = treeData.nodeList.map(node => ({
+    id: node.id,
+    type: 'faultNode',
+    position: { x: node.x || 0, y: node.y || 0 },
+    data: {
+      label: node.name,
+      type: node.type,
+      gate: node.gate,
+      eventId: node.event?.id || node.id,
+      probability: node.event?.probability
+    }
+  }))
+  
+  // 转换边数据
+  treeEdges.value = treeData.linkList.map(link => ({
+    id: link.id || `edge-${link.sourceId}-${link.targetId}`,
+    source: link.targetId,
+    target: link.sourceId,
+    type: 'default',
+    animated: false,
+    data: {
+      gateType: link.gateType || '' // 从 linkList 中获取门类型
+    },
+    style: { stroke: '#94a3b8', strokeWidth: 2 }
+  }))
+  
+  // 自动布局（延迟执行确保节点已渲染）
+  setTimeout(() => {
+    autoLayout()
+    ElMessage.success(`故障树已生成：${treeNodes.value.length}个节点，${treeEdges.value.length}条连接`)
+  }, 200)
+}
+
+// 自动布局
+const autoLayout = () => {
+  if (!isAutoLayoutEnabled.value) {
+    ElMessage.info('自动布局已禁用，可手动拖动节点调整位置')
+    return
+  }
+  
+  const layouted = getLayoutedElements(treeNodes.value, treeEdges.value)
+  treeNodes.value = layouted.nodes
+  ElMessage.success('布局已优化，可拖动节点调整位置')
+}
+
+// 切换自动布局
+const toggleAutoLayout = () => {
+  isAutoLayoutEnabled.value = !isAutoLayoutEnabled.value
+  ElMessage.success(isAutoLayoutEnabled.value ? '已启用自动布局' : '已禁用自动布局')
+}
+
+const getLayoutedElements = (nodes, edges) => {
+  const dagreGraph = new dagre.graphlib.Graph()
+  dagreGraph.setDefaultEdgeLabel(() => ({}))
+  dagreGraph.setGraph({ 
+    rankdir: 'TB',  // Top to Bottom
+    nodesep: 80,    // 节点间距
+    ranksep: 120    // 层级间距
+  })
+  
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: 220, height: 120 })
+  })
+  
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target)
+  })
+  
+  dagre.layout(dagreGraph)
+  
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id)
+    return {
+      ...node,
+      position: { 
+        x: nodeWithPosition.x - 110, 
+        y: nodeWithPosition.y - 60 
+      }
+    }
+  })
+  
+  return { nodes: layoutedNodes, edges }
+}
+
+// AI 相关功能
+const toggleAIChat = () => {
+  activeSidebar.value = activeSidebar.value === 'ai' ? null : 'ai'
+  ElMessage.info(activeSidebar.value ? 'AI 助手已打开' : 'AI 助手已关闭')
+}
+
+const handleAddNode = () => {
+  const newNode = {
+    id: `node-${Date.now()}`,
+    type: 'faultNode',
+    position: { x: 100, y: 100 },
+    data: {
+      label: '新事件',
+      type: '3',
+      gate: '',
+      eventId: `evt-${Date.now()}`,
+      probability: ''
+    }
+  }
+  treeNodes.value.push(newNode)
+  selectedNodeData.value = newNode.data
+  activeSidebar.value = 'node'
+  ElMessage.success('节点已添加，请在右侧编辑属性')
+}
+
+const aiContext = computed(() => ({
+  nodes: treeNodes.value.map(n => ({
+    id: n.id,
+    label: n.data.label,
+    type: n.data.type,
+    gate: n.data.gate
+  })),
+  edges: treeEdges.value.map(e => ({
+    source: e.source,
+    target: e.target
+  }))
+}))
+
+// 连线样式
+const getEdgeStyle = (edge) => {
+  if (selectedEdgeData.value?.id === edge.id) {
+    return { stroke: '#ef4444', strokeWidth: 4 }
+  }
+  return { stroke: '#667eea', strokeWidth: 2 }
+}
+
+// 节点点击事件
+const onNodeClick = ({ node }) => {
+  selectedNodeData.value = node.data
+  selectedEdgeData.value = null
+  activeSidebar.value = 'node'
+  ElMessage.info(`选中节点：${node.data.label}`)
+}
+
+// 连线点击事件
+const onEdgeClick = ({ edge }) => {
+  selectedEdgeData.value = edge
+  selectedNodeData.value = null
+  activeSidebar.value = 'ai'
+  ElMessage.info('已选中连线，可在 AI 助手中分析')
+}
+
+// 画布点击事件
+const onPaneClick = () => {
+  selectedNodeData.value = null
+  selectedEdgeData.value = null
+  activeSidebar.value = null
+}
+
+// 监听故障树数据生成
+watch(() => generatedTreeData.value, (newData) => {
+  if (newData) {
+    parseTreeData(newData)
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
 .upload-page {
   max-width: 1400px;
   margin: 0 auto;
+  padding: 30px;
 }
 
 .page-header {
   margin-bottom: 30px;
   text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  color: white;
 }
 
 .page-header h2 {
-  font-size: 28px;
-  color: #2c3e50;
-  margin-bottom: 10px;
+  font-size: 32px;
+  margin: 0 0 10px 0;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .description {
-  color: #606266;
-  font-size: 15px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 16px;
+  margin: 0;
+  letter-spacing: 0.5px;
 }
 
 .upload-card,
 .example-card,
 .history-card {
-  border-radius: 8px;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.upload-card:hover,
+.example-card:hover,
+.history-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.visualization-section {
+  margin-top: 30px;
+}
+
+.viz-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.visualization-container {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.fault-tree-flow {
+  width: 100%;
+  height: 100%;
+}
+
+.flow-controls {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.tree-placeholder,
+.tree-display {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
 :deep(.el-timeline-item__node) {

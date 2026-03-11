@@ -1,5 +1,6 @@
 """故障树智能生成系统 - FastAPI 主入口（已集成 Neo4j 模块）"""
 from fastapi import FastAPI, Request
+from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -36,6 +37,7 @@ from app.core.config import settings
 from app.services.kg_builder import FaultTreeKGBuilder
 from app.services.tree_generator import FaultTreeGenerator
 from app.services.fault_tree_service import FaultTreeService
+from app.services.knowledge_extraction_service import KnowledgeExtractionService
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 # ================= 重试机制函数（从模块提取） =================
@@ -81,9 +83,11 @@ async def lifespan(app: FastAPI):
         # 使用重试机制创建数据库连接
         app.state.kg_builder = _create_kg_builder_with_retry()
         app.state.tree_generator = _create_tree_generator_with_retry()
+        app.state.extraction_service = KnowledgeExtractionService()
         app.state.fault_tree_service = FaultTreeService(
             kg_builder=app.state.kg_builder,
             tree_generator=app.state.tree_generator,
+            extraction_service=app.state.extraction_service,
         )
         logger.info("✅ Neo4j 数据库连接池与故障树服务初始化成功")
     except Exception as e:
@@ -144,6 +148,16 @@ app.add_middleware(
 # 故障树接口已通过 api_router 挂载在 /api/v1/fault-tree
 app.include_router(api_router, prefix="/api/v1")
 
+# ================= Swagger 文档配置 =================
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    """自定义 Swagger UI 页面"""
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - Swagger UI",
+        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png",
+    )
+
 # ================= 健康检查端点（新增） =================
 @app.get("/api/health")
 async def health_check():
@@ -166,19 +180,28 @@ async def health_check():
 # ================= 根路径 =================
 @app.get("/")
 async def root():
-  return {
+    return {
         "message": "故障树智能生成系统 API 服务运行中",
-        "docs": "/docs",
+        "swagger_ui": "http://localhost:8000/docs",
         "health": "/api/health",
-        "fault_tree_api": "/api/v1/fault-tree (POST /generate 需 body: { \"knowledge_id\": \"\", \"top_event\": \"登机梯故障\" ))"
+        "api_base": "/api/v1"
     }
 
 # ================= 启动入口（保留主项目的启动方式） =================
 if __name__ == "__main__":
     import uvicorn
+    # 启动时打印访问地址
+    print("\n" + "="*60)
+    print("故障树智能生成系统 API 服务已启动")
+    print("="*60)
+    print("📚 API 文档地址：http://localhost:8000/docs")
+    print("🏥 健康检查：http://localhost:8000/api/health")
+    print("🔧 API 基础路径：/api/v1")
+    print("="*60 + "\n")
+    
     uvicorn.run(
         "main:app", 
         host="0.0.0.0", 
         port=8000, 
-      reload=True
+        reload=True
     )

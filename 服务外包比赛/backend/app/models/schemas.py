@@ -32,20 +32,23 @@ class LogicGate(BaseModel):
 
 class KnowledgeExtractRequest(BaseModel):
     """知识提取请求"""
-    file_id: str = Field(description="文件ID或文件ID列表")
-    top_event: str = Field(description="用户指定的顶事件")
+    file_id: str = Field(description="文件 ID 或文件路径")
+    top_event: Optional[str] = Field(default=None, description="用户指定的顶事件（可选）")
     requirements: Optional[str] = Field(default=None, description="生成要求（提示词）")
     max_depth: int = Field(default=5, description="最大深度")
+    mode: str = Field(default="multimodal", description="处理模式：legacy(仅文本) 或 multimodal(多模态编码)")
 
 class KnowledgeExtractResponse(BaseModel):
-    """知识提取响应（完整版，含事件与逻辑门）"""
+    """知识提取响应（完整版，含三元组）"""
     task_id: str
-    events: List[FaultEvent]
-    gates: List[LogicGate]
+    triplets: List[Dict[str, Any]]  # 提取的三元组列表
+    events: List[FaultEvent] = []  # 转换为事件格式（兼容旧版）
+    gates: List[LogicGate] = []  # 转换为逻辑门格式（兼容旧版）
     status: str
-    progress: float
+    progress: float = 1.0
     traceability: Optional[List[Dict]] = None  # 溯源依据
     accuracy_metrics: Optional[Dict] = None  # 准确率指标
+    output_file: Optional[str] = None  # 输出的 JSON 文件路径（用于测试）
 
 
 class KnowledgeIngestResponse(BaseModel):

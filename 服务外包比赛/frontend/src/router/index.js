@@ -1,9 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import UploadPage from '@/pages/UploadPage.vue'
-import ExtractPage from '@/pages/ExtractPage.vue'
-import GeneratePage from '@/pages/GeneratePage.vue'
-import VerifyPage from '@/pages/VerifyPage.vue'
-import ExportPage from '@/pages/ExportPage.vue'
+import UploadPage from '../pages/UploadPage.vue'
+import GeneratePage from '../pages/GeneratePage.vue'
+import VerifyPage from '../pages/VerifyPage.vue'
+import FaultTreeVisualization from '../pages/FaultTreeVisualization.vue'
 
 const routes = [
   {
@@ -13,27 +12,26 @@ const routes = [
   {
     path: '/upload',
     name: 'Upload',
-    component: UploadPage
-  },
-  {
-    path: '/extract',
-    name: 'Extract',
-    component: ExtractPage
+    component: UploadPage,
+    meta: { title: '文件上传与知识抽取' }
   },
   {
     path: '/generate',
     name: 'Generate',
-    component: GeneratePage
+    component: GeneratePage,
+    meta: { title: '故障树生成' }
   },
   {
     path: '/verify',
     name: 'Verify',
-    component: VerifyPage
+    component: VerifyPage,
+    meta: { title: '逻辑验证' }
   },
   {
-    path: '/export',
-    name: 'Export',
-    component: ExportPage
+    path: '/visualization',
+    name: 'Visualization',
+    component: FaultTreeVisualization,
+    meta: { title: '故障树可视化' }
   }
 ]
 

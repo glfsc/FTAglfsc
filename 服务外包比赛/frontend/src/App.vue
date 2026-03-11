@@ -1,99 +1,45 @@
 <template>
   <div id="app">
     <el-container>
-      <el-header class="app-header">
+      <el-header>
         <div class="header-content">
-          <div class="logo-section">
-            <el-icon :size="32" color="#fff"><Setting /></el-icon>
-            <div class="title-group">
-              <h1>工业设备故障树智能生成系统</h1>
-              <p class="subtitle">Fault Tree Intelligent Generation System</p>
-            </div>
+          <div class="logo">
+            <h1>工业设备故障树智能生成系统</h1>
+            <p>Fault Tree Intelligent Generation System</p>
           </div>
-          <el-menu 
-            mode="horizontal" 
-            :default-active="activeMenu" 
-            router
-            background-color="transparent"
+          <el-menu
+            mode="horizontal"
+            :router="true"
+            :default-active="$route.path"
+            background-color="#545c64"
             text-color="#fff"
             active-text-color="#ffd04b"
           >
             <el-menu-item index="/upload">
               <el-icon><Upload /></el-icon>
-              <span>文本输入</span>
-            </el-menu-item>
-            <el-menu-item index="/extract">
-              <el-icon><DataAnalysis /></el-icon>
-              <span>知识提取</span>
+              <span>知识抽取</span>
             </el-menu-item>
             <el-menu-item index="/generate">
-              <el-icon><Share /></el-icon>
+              <el-icon><Connection /></el-icon>
               <span>故障树生成</span>
             </el-menu-item>
-            <el-menu-item index="/verify">
-              <el-icon><CircleCheck /></el-icon>
-              <span>逻辑检验</span>
-            </el-menu-item>
-            <el-menu-item index="/export">
-              <el-icon><Download /></el-icon>
-              <span>结果导出</span>
+            <el-menu-item index="/visualization">
+              <el-icon><DataAnalysis /></el-icon>
+              <span>故障树可视化</span>
             </el-menu-item>
           </el-menu>
         </div>
       </el-header>
-      
-      <!-- 流程进度条 -->
-      <div class="process-steps">
-        <el-steps :active="currentStep" align-center finish-status="success">
-          <el-step title="工业文本输入" icon="Upload" />
-          <el-step title="知识提取层" icon="DataAnalysis" />
-          <el-step title="故障知识提取" icon="Document" />
-          <el-step title="故障树生成" icon="Share" />
-          <el-step title="可视化呈现" icon="View" />
-          <el-step title="逻辑诊断" icon="CircleCheck" />
-        </el-steps>
-      </div>
 
-      <el-main class="app-main">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+      <el-main>
+        <router-view />
       </el-main>
-
-      <el-footer class="app-footer">
-        <p>© 2026 第十七届中国大学生服务外包创新创业大赛 A15赛题</p>
-      </el-footer>
     </el-container>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { 
-  Setting, Upload, DataAnalysis, Share, 
-  CircleCheck, Download, Document, View 
-} from '@element-plus/icons-vue'
-
-const route = useRoute()
-const activeMenu = ref('/')
-
-const currentStep = computed(() => {
-  const stepMap = {
-    '/upload': 0,
-    '/extract': 2,
-    '/generate': 3,
-    '/verify': 5,
-    '/export': 5
-  }
-  return stepMap[route.path] || 0
-})
-
-watch(() => route.path, (newPath) => {
-  activeMenu.value = newPath
-}, { immediate: true })
+import { Upload, Connection, CircleCheck, DataAnalysis } from '@element-plus/icons-vue'
 </script>
 
 <style>
@@ -108,6 +54,7 @@ watch(() => route.path, (newPath) => {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
 }
 
 .app-header {
