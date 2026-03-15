@@ -73,8 +73,9 @@ npm run dev
 
 ### 访问地址
 - 前端界面：http://localhost:3000
-- 后端API：http://localhost:8000
-- API文档：http://localhost:8000/docs
+- 后端 API：http://localhost:8000
+- API 文档：http://localhost:8000/docs
+- **API v2.0**: 全新模块化架构，详见 `API 重构说明.md`
 
 ## 核心功能
 
@@ -129,7 +130,12 @@ npm run dev
 服务外包比赛/
 ├── backend/              # 后端代码
 │   ├── app/
-│   │   ├── api/v1/      # API路由
+│   │   ├── api/v1/      # API 路由（v2.0 重构版）
+│   │   │   ├── __init__.py              # 路由汇总
+│   │   │   ├── document_upload.py       # 文档上传与拆解
+│   │   │   ├── knowledge_extraction.py  # 知识抽取
+│   │   │   ├── fault_tree_generation.py # 故障树生成
+│   │   │   └── ai_chat.py              # AI 对话
 │   │   ├── core/        # 核心配置
 │   │   ├── models/      # 数据模型
 │   │   ├── services/    # 业务逻辑
@@ -141,7 +147,7 @@ npm run dev
 │   └── requirements.txt # 依赖清单
 ├── frontend/            # 前端代码
 │   ├── src/
-│   │   ├── api/        # API封装
+│   │   ├── api/        # API 封装（已适配 v2.0）
 │   │   ├── pages/      # 页面组件
 │   │   │   ├── UploadPage.vue    # 文件上传
 │   │   │   ├── ExtractPage.vue   # 知识提取
@@ -151,9 +157,11 @@ npm run dev
 │   │   ├── router/     # 路由配置
 │   │   └── App.vue     # 主应用
 │   └── package.json    # 依赖配置
+├── API 重构说明.md      # API 详细说明
+├── API 快速参考.md      # 接口速查手册
 ├── 赛题需求分析.md      # 需求文档
 ├── 技术实现方案.md      # 技术方案
-├── API文档.md          # 接口文档
+├── API 文档.md          # 接口文档
 └── README.md           # 项目说明
 ```
 

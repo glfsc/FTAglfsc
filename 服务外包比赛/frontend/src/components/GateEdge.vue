@@ -1,112 +1,125 @@
-<script setup lang="ts">
-import { computed } from 'vue';
-import { getSimpleBezierPath } from '@vue-flow/core';
 
-interface GateEdgeData {
-  gateType?: string; // 'OR' or 'AND'
+D:\CSSO\服务外包比赛\frontend\src\components\GateNode.vue
+<script setup lang="ts">import { computed } from 'vue'
+import { Handle, Position } from '@vue-flow/core'
+
+interface GateNodeData {
+  gateType: 'AND' | 'OR' | '1' | '2'
 }
 
-const props = defineProps({
-  id: { type: String, required: true },
-  source: { type: String, required: true },
-  target: { type: String, required: true },
-  sourceX: { type: Number, required: true },
-  sourceY: { type: Number, required: true },
-  sourcePosition: { type: String, required: true },
-  targetX: { type: Number, required: true },
-  targetY: { type: Number, required: true },
-  targetPosition: { type: String, required: true },
-  data: { type: Object as () => GateEdgeData, default: () => ({}) },
-  selected: { type: Boolean, default: false },
-  markerEnd: { type: String, default: '' }
-});
+const props = defineProps<{
+  id: string
+  data: GateNodeData
+  selected?: boolean
+}>()
 
-const [edgePath, labelX, labelY] = getSimpleBezierPath({
-  sourceX: props.sourceX,
-  sourceY: props.sourceY,
-  sourcePosition: props.sourcePosition,
-  targetX: props.targetX,
-  targetY: props.targetY,
-  targetPosition: props.targetPosition,
-});
+const gateType = computed(() => {
+  if (props.data.gateType === '1' || props.data.gateType === 'AND') return 'AND'
+  if (props.data.gateType === '2' || props.data.gateType === 'OR') return 'OR'
+  return 'OR'
+})
 
-const gateSymbol = computed(() => {
-  if (props.data?.gateType === 'AND' || props.data?.gateType === '1') {
-    return '∧';
-  }
-  if (props.data?.gateType === 'OR' || props.data?.gateType === '2') {
-    return '∨';
-  }
-  return '';
-});
-
-const getGateStyle = () => {
-  if (props.selected) {
-    return {
-      stroke: '#ef4444',
-      strokeWidth: 3,
-      fill: '#ef4444',
-    };
-  }
-  return {
-    stroke: '#94a3b8',
-    strokeWidth: 2,
-    fill: '#94a3b8',
-  };
-};
+const isAND = computed(() => gateType.value === 'AND')
 </script>
 
 <template>
-  <g>
-    <!-- Edge path -->
-    <path
-      :id="props.id"
-      class="vue-flow__edge-path"
-      :d="edgePath"
-      :style="getGateStyle()"
-      :marker-end="props.markerEnd ? props.markerEnd : undefined"
-    />
-    
-    <!-- Gate symbol label -->
-    <g
-      v-if="gateSymbol"
-      :transform="`translate(${labelX}, ${labelY})`"
-      class="gate-label"
+  <div class="gate-node" :class="{ 'is-selected': !!selected }">
+    <svg 
+      viewBox="0 0 60 50" 
+      class="gate-svg"
+      :class="{ 'gate-and': isAND, 'gate-or': !isAND }"
     >
-      <!-- Background circle -->
-      <circle
-        r="10"
-        fill="white"
-        stroke="#94a3b8"
-        stroke-width="1.5"
+      <defs>
+        <linearGradient :id="`gate-gradient-${id}`" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#f1f5f9;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      
+      <path
+        v-if="isAND"
+        d="M 15 5 L 45 5 L 45 45 A 15 15 0 0 1 15 45 Z"
+        fill="url(#gate-gradient-${id})"
+        stroke="#1e293b"
+        stroke-width="2"
       />
       
-      <!-- Gate symbol text -->
+      <path
+        v-if="!isAND"
+        d="M 15 5 Q 30 20 45 5 L 45 45 Q 30 35 15 45 Z"
+        fill="url(#gate-gradient-${id})"
+        stroke="#1e293b"
+        stroke-width="2"
+      />
+      
       <text
+        x="30"
+        y="30"
         text-anchor="middle"
-        dominant-baseline="central"
         font-size="14"
         font-weight="bold"
-        fill="#94a3b8"
+        fill="#1e293b"
+        font-family="Arial, sans-serif"
       >
-        {{ gateSymbol }}
+        {{ gateType }}
       </text>
-    </g>
-  </g>
+    </svg>
+    
+    <Handle 
+      type="target" 
+      :position="Position.Top" 
+      class="gate-handle gate-handle--top" 
+      :style="{ left: '50%', transform: 'translateX(-50%)' }"
+    />
+    
+    <Handle 
+      type="source" 
+      :position="Position.Bottom" 
+      class="gate-handle gate-handle--bottom" 
+      :style="{ left: '50%', transform: 'translateX(-50%)' }"
+    />
+  </div>
 </template>
 
-<style scoped>
-.gate-label {
-  cursor: pointer;
-  transition: all 0.2s;
+<style scoped>.gate-node {
+  position: relative;
+  width: 60px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.gate-label:hover circle {
-  fill: #f1f5f9;
-  stroke: #64748b;
+.gate-svg {
+  width: 60px;
+  height: 50px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: all 0.2s ease;
 }
 
-.gate-label:hover text {
-  fill: #64748b;
+.gate-node:hover .gate-svg {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.gate-node.is-selected .gate-svg {
+  filter: drop-shadow(0 0 0 3px rgba(99, 102, 241, 0.4));
+  stroke: #6366f1;
+  stroke-width: 2.5;
+}
+
+.gate-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #6366f1 !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4) !important;
+}
+
+.gate-handle--top {
+  top: -4px !important;
+}
+
+.gate-handle--bottom {
+  bottom: -4px !important;
 }
 </style>

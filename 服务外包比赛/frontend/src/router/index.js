@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import StudioPage from '../pages/StudioPage.vue'
 import UploadPage from '../pages/UploadPage.vue'
 import GeneratePage from '../pages/GeneratePage.vue'
 import VerifyPage from '../pages/VerifyPage.vue'
@@ -7,31 +8,37 @@ import FaultTreeVisualization from '../pages/FaultTreeVisualization.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/upload'
+    redirect: '/studio'
+  },
+  {
+    path: '/studio',
+    name: 'Studio',
+    component: StudioPage,
+    meta: { title: 'Fault Tree Studio' }
   },
   {
     path: '/upload',
     name: 'Upload',
     component: UploadPage,
-    meta: { title: '文件上传与知识抽取' }
+    meta: { title: 'Upload' }
   },
   {
     path: '/generate',
     name: 'Generate',
     component: GeneratePage,
-    meta: { title: '故障树生成' }
+    meta: { title: 'Generate' }
   },
   {
     path: '/verify',
     name: 'Verify',
     component: VerifyPage,
-    meta: { title: '逻辑验证' }
+    meta: { title: 'Verify' }
   },
   {
     path: '/visualization',
     name: 'Visualization',
     component: FaultTreeVisualization,
-    meta: { title: '故障树可视化' }
+    meta: { title: 'Visualization' }
   }
 ]
 
