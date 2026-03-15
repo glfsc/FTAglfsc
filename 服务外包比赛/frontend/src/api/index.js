@@ -13,15 +13,11 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-    // 如果是 FormData，让浏览器自动设置 Content-Type（包括 boundary）
-    if (config.data instanceof FormData) {
-      delete config.headers['Content-Type']
-    }
-    return config
+   return config
   },
   error => {
     console.error('请求错误:', error)
-    return Promise.reject(error)
+   return Promise.reject(error)
   }
 )
 
@@ -57,104 +53,45 @@ export const uploadKnowledge = (triplets) => {
 }
 
 /**
- * 上传文档
- * POST /api/v1/document/upload
- * @param {FormData} formData - FormData 对象（包含 file 字段）
+ * 上传文件
+ * POST /api/v1/fault-tree/upload
+ * @param {File} file - 上传的文件
  */
-export const uploadDocument = async (formData) => {
-  const response = await api.post('/document/upload', formData, {
+export const uploadFile = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await api.post('/fault-tree/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   })
   return response
 }
-
-/**
- * 验证文档
- * POST /api/v1/document/validate
- * @param {FormData} formData - FormData 对象（包含 file 字段）
- */
-export const validateDocument = async (formData) => {
-  const response = await api.post('/document/validate', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  })
-  return response
-}
-
-/**
- * 上传文件（已废弃，使用 uploadDocument 替代）
- * @deprecated Use uploadDocument instead
- */
-export const uploadFile = uploadDocument
 
 /**
  * 提取知识
- * POST /api/v1/knowledge/extract
+ * POST /api/v1/fault-tree/extract
  * @param {Object} data - 提取请求数据
  * @param {string} data.file_id - 文件 ID
- * @param {string} data.top_event - 顶事件名称
- * @param {string} data.output_dir - 输出目录
+ * @param {string} data.mode - 处理模式 (legacy/multimodal)
  */
 export const extractKnowledge = (data) => {
-  return api.post('/knowledge/extract', {
-    file_id: data.file_id,
-    top_event: data.top_event || 'Top Event',
-    output_dir: data.output_dir || 'data/triplets'
-  })
+  return api.post('/fault-tree/extract', data)
 }
 
 /**
- * 提取并上传知识到图谱
- * POST /api/v1/knowledge/extract_and_upload
- * @param {Object} data - 提取请求数据
- */
-export const extractAndUploadKnowledge = (data) => {
-  return api.post('/knowledge/extract_and_upload', {
-    file_id: data.file_id,
-    top_event: data.top_event || 'Top Event',
-    output_dir: data.output_dir || 'data/triplets'
-  })
-}
-
-/**
- * 生成故障树（简化版 GET 接口）
- * GET /api/v1/fault-tree/generate_simple?top_event=xxx
+ * 生成故障树
+ * GET /api/v1/fault-tree/generate_tree?top_event=xxx
  * @param {string} topEvent - 顶事件名称
- * @param {boolean} exportToFile - 是否导出为文件
+ * @param {boolean} export - 是否导出为文件
  */
 export const generateFaultTree = (topEvent, exportToFile = false) => {
-  return api.get('/fault-tree/generate_simple', {
+  return api.get('/fault-tree/generate_tree', {
     params: {
       top_event: topEvent,
       export: exportToFile
     }
-  })
-}
-
-/**
- * 生成故障树（POST 接口，支持更多选项）
- * POST /api/v1/fault-tree/generate
- * @param {Object} data - 生成请求数据
- * @param {string} data.top_event - 顶事件名称
- * @param {boolean} data.use_file - 是否使用文件模式
- * @param {string} data.file_id - 文件 ID（可选）
- * @param {boolean} data.export - 是否导出为文件
- */
-export const generateFaultTreeAdvanced = (data) => {
-  return api.post('/fault-tree/generate', data)
-}
-
-/**
- * 从文件一键生成故障树（不依赖 Neo4j，已废弃）
- * @deprecated Use generateFaultTreeAdvanced with use_file=true instead
- */
-export const generateFaultTreeFromFile = (data) => {
-  return generateFaultTreeAdvanced({
-    ...data,
-    use_file: true
   })
 }
 
