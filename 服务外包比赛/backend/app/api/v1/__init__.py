@@ -2,8 +2,8 @@
 API 路由汇总
 """
 from fastapi import APIRouter
-from app.api.v1.routes import fault_tree
-from app.api.v1.routes import ai_chat
+from app.api.v1 import fault_tree
+from app.api.v1 import ai_chat
 
 router = APIRouter()
 
