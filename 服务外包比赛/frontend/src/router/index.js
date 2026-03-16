@@ -3,6 +3,7 @@ import UploadPage from '../pages/UploadPage.vue'
 import GeneratePage from '../pages/GeneratePage.vue'
 import VerifyPage from '../pages/VerifyPage.vue'
 import FaultTreeVisualization from '../pages/FaultTreeVisualization.vue'
+import GlobalThemeComparison from '../pages/test/GlobalThemeComparison.vue'
 
 const routes = [
   {
@@ -32,6 +33,12 @@ const routes = [
     name: 'Visualization',
     component: FaultTreeVisualization,
     meta: { title: '故障树可视化' }
+  },
+  {
+    path: '/test-theme',
+    name: 'TestTheme',
+    component: GlobalThemeComparison,
+    meta: { title: '全局界面风格测试' }
   }
 ]
 
