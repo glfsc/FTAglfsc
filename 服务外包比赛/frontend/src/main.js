@@ -5,34 +5,11 @@ import 'element-plus/dist/index.css'
 import App from './App.vue'
 import router from './router'
 
-const ensureTailwindCdnLoaded = () => {
-  if (typeof document === 'undefined') return Promise.resolve()
-  if (document.querySelector('script[data-tailwindcdn="true"]')) return Promise.resolve()
+const app = createApp(App)
+const pinia = createPinia()
 
-  return new Promise((resolve) => {
-    const script = document.createElement('script')
-    script.src = 'https://cdn.tailwindcss.com'
-    script.async = true
-    script.setAttribute('data-tailwindcdn', 'true')
-    script.onload = () => resolve()
-    script.onerror = () => resolve()
-    document.head.appendChild(script)
-  })
-}
+app.use(pinia)
+app.use(router)
+app.use(ElementPlus)
 
-const bootstrap = async () => {
-  if (typeof window !== 'undefined' && window.location.port === '3001') {
-    await ensureTailwindCdnLoaded()
-  }
-
-  const app = createApp(App)
-  const pinia = createPinia()
-
-  app.use(pinia)
-  app.use(router)
-  app.use(ElementPlus)
-
-  app.mount('#app')
-}
-
-bootstrap()
+app.mount('#app')
