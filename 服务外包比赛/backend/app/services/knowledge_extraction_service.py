@@ -35,8 +35,8 @@ class KnowledgeExtractionService:
         
         Args:
             file_path: 文件路径
-            source_reference: 来源引用（文件名等）
-            top_event: 顶事件名称（用于命名输出文件）
+            source_reference: 来源引用（文件名或顶事件名称）
+            top_event: 顶事件名称（用于命名输出文件和作为来源引用）
             
         Returns:
             包含提取结果的字典
@@ -47,9 +47,12 @@ class KnowledgeExtractionService:
         # 读取文件内容
         file_content = self._read_file_content(file_path)
         
+        # 优先使用顶事件作为来源引用，否则使用文件名
+        source_ref = top_event if top_event else (source_reference or os.path.basename(file_path))
+        
         # 使用 LLM 提取三元组
-        logger.info(f"开始从文件提取三元组：{source_reference or file_path}")
-        json_result = self.extractor.extract(file_content, source_reference=source_reference or os.path.basename(file_path))
+        logger.info(f"开始从文件提取三元组：{source_ref}")
+        json_result = self.extractor.extract(file_content, source_reference=source_ref)
         
         # 解析和验证结果
         try:

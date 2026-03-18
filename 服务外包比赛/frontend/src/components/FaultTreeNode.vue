@@ -21,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'updateData', id: string, data: Partial<NodeData>): void;
   (e: 'requestDelete', id: string): void;
+  (e: 'click'): void;
 }>();
 
 const isHovered = ref(false);
@@ -90,9 +91,9 @@ const handleRightClick = (event: MouseEvent) => {
   // Could show context menu here
 };
 
-const startConnection = () => {
-  isConnecting.value = true;
-  isConnectionSource.value = true;
+const handleNodeClick = (event: MouseEvent) => {
+  event.stopPropagation();
+  emit('click');
 };
 
 const cancelConnection = () => {
@@ -124,12 +125,23 @@ const handleConnectionStart = (event: MouseEvent) => {
       ]"
       @dblclick="startEditing"
       @click.right="handleRightClick"
+      @click="handleNodeClick"
     >
-      <!-- Animated Glow Effect when Selected -->
+      <!-- Animated Glow Effect when Selected or Clicked -->
       <div
-        v-if="selected"
+        v-if="selected || isHovered"
         class="absolute inset-0 bg-gradient-to-r opacity-10 animate-pulse pointer-events-none"
         :class="nodeStyles.accent"
+      ></div>
+      
+      <!-- Click Ripple Effect -->
+      <div
+        v-if="isHovered"
+        class="absolute inset-0 rounded-xl border-2 transition-all duration-300 pointer-events-none"
+        :class="[
+          selected ? 'border-transparent' : 'border-indigo-400/30',
+          selected ? 'shadow-[0_0_20px_rgba(99,102,241,0.5)]' : 'shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+        ]"
       ></div>
 
       <!-- Connection Mode Indicator -->
@@ -215,6 +227,7 @@ const handleConnectionStart = (event: MouseEvent) => {
     </div>
 
     <!-- Connection Handles with Animation and Interaction -->
+    <!-- Input handle at TOP - for receiving connections from parent -->
     <Handle 
       type="target" 
       :position="Position.Top" 
@@ -223,6 +236,7 @@ const handleConnectionStart = (event: MouseEvent) => {
       @mousedown="handleConnectionStart"
     />
     
+    <!-- Output handle at BOTTOM - for creating connections to children -->
     <Handle 
       v-if="data.type !== '3'" 
       type="source" 

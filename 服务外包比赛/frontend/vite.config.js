@@ -20,6 +20,19 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets'
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // 忽略 source map 相关警告
+        if (warning.code === 'SOURCEMAP_ERROR') {
+          return;
+        }
+        warn(warning);
+      }
+    }
+  },
+  optimizeDeps: {
+    exclude: ['jspdf'] // 预构建时排除 jspdf，避免 source map 问题
   }
 })

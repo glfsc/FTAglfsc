@@ -18,6 +18,17 @@ body {
   color: #0f172a;
 }
 
+:root {
+  --left-sidebar-text-light: #262626;
+  --left-sidebar-text: rgba(226, 232, 240, 0.75);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --left-sidebar-text: var(--left-sidebar-text-light);
+  }
+}
+
 /* Element Plus 中文字体修复 */
 :deep(.el-input__inner),
 :deep(.el-textarea__inner),

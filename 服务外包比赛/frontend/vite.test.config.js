@@ -9,6 +9,14 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
+  esbuild: {
+    sourcemap: false
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      sourcemap: false
+    }
+  },
   server: {
     port: 3001,
     proxy: {
@@ -20,6 +28,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist-test',
-    assetsDir: 'assets'
+    assetsDir: 'assets',
+    sourcemap: false
   }
 })

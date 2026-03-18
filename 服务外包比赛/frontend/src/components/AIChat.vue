@@ -100,6 +100,15 @@ const handleSendMessage = async () => {
 
     <!-- Messages -->
     <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 scroll-smooth">
+      <!-- Expert System Header Effect -->
+      <div v-if="messages.length === 0" class="relative mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
+        <div class="absolute inset-0 bg-gradient-to-r from-emerald-400/10 to-teal-400/10 animate-pulse rounded-xl"></div>
+        <div class="relative flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+          <h3 class="font-bold text-slate-800">专家辅助系统 - Expert Assistant</h3>
+        </div>
+      </div>
+      
       <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-0 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-forwards">
         <div class="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-2">
           <Bot class="w-8 h-8 text-indigo-500" />
@@ -128,10 +137,12 @@ const handleSendMessage = async () => {
 
         <!-- Bubble -->
         <div 
-          class="max-w-[85%] rounded-2xl px-5 py-3.5 text-sm shadow-sm leading-relaxed"
+          class="max-w-[85%] rounded-2xl px-5 py-3.5 text-sm shadow-sm leading-relaxed relative overflow-hidden"
           :class="msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'"
         >
-          <div class="whitespace-pre-wrap">{{ msg.text }}</div>
+          <!-- Glow effect for AI messages -->
+          <div v-if="msg.role === 'model'" class="absolute inset-0 bg-gradient-to-r from-emerald-400/5 to-teal-400/5 animate-pulse pointer-events-none"></div>
+          <div class="relative whitespace-pre-wrap">{{ msg.text }}</div>
         </div>
       </div>
 

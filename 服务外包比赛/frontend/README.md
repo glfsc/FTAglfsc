@@ -26,6 +26,32 @@ npm run dev
 npm run build
 ```
 
+### ⚠️ 常见问题修复
+
+如果遇到以下错误：
+```
+ERROR: Unexpected end of file in source map
+node_modules/jspdf/dist/jspdf.es.min.js.map
+```
+
+**解决方法**：运行修复脚本删除损坏的 .map 文件
+
+**Windows（PowerShell）**：
+```powershell
+python delete_maps.py
+```
+
+或者手动删除：
+```bash
+# 进入 frontend 目录
+cd frontend
+
+# 删除所有 jspdf 的 .map 文件
+rm node_modules/jspdf/dist/*.map
+```
+
+然后重新启动项目即可。
+
 ## 项目结构
 ```
 frontend/

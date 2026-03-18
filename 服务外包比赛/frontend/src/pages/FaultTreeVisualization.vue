@@ -2,7 +2,6 @@
 import { ref, computed, onMounted } from 'vue';
 import { VueFlow, useVueFlow, Connection, Edge, Node, MarkerType, EdgeMouseEvent, BaseEdge } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
-import { Controls } from '@vue-flow/controls';
 import { Download, FileJson, FileImage, FileText, FileType, ChevronDown, Plus, Upload, Trash2, MessageSquare, LayoutGrid } from 'lucide-vue-next';
 import FaultTreeNode from '../components/FaultTreeNode.vue';
 import Sidebar from '../components/Sidebar.vue';
@@ -27,6 +26,38 @@ const isConnectingMode = ref(false);
 const editableMode = ref(true); // Enable editing mode by default
 
 const { onConnect, addEdges, onNodeClick, onPaneClick, onEdgeClick, getNodes, getNodesBounds, getViewport, setViewport, fitView, removeEdges } = useVueFlow();
+
+// Validate connection rules
+const validateConnection = (connection: Connection) => {
+  const sourceNode = nodes.value.find(n => n.id === connection.source);
+  const targetNode = nodes.value.find(n => n.id === connection.target);
+
+  // Check if connection already exists
+  const exists = edges.value.some(
+    e => e.source === connection.source && e.target === connection.target
+  );
+  if (exists) {
+    ElMessage.warning('该连接已存在');
+    return false;
+  }
+
+  // Validation: Top Event (1) cannot connect directly to Basic Event (3)
+  if (sourceNode?.data.type === '1' && targetNode?.data.type === '3') {
+    ElMessage.error('无效连接：顶事件不能直接连接到基本事件，必须连接到中间事件');
+    return false;
+  }
+
+  return true;
+};
+
+// Handle edge creation
+const onEdgeCreated = (event: any) => {
+  ElMessage.success('连线创建成功！拖动节点可调整位置');
+  // Exit connecting mode after successful connection
+  if (isConnectingMode.value) {
+    isConnectingMode.value = false;
+  }
+};
 
 // --- Layout Logic ---
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
@@ -59,29 +90,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 // --- Event Handlers ---
 
 onConnect((params) => {
-  const sourceNode = nodes.value.find(n => n.id === params.source);
-  const targetNode = nodes.value.find(n => n.id === params.target);
-
-  // Validation: Top Event (1) cannot connect directly to Basic Event (3)
-  if (sourceNode?.data.type === '1' && targetNode?.data.type === '3') {
-    ElMessage.error('无效连接：顶事件不能直接连接到基本事件，必须连接到中间事件');
-    return;
-  }
-  
-  // Check for duplicate connection
-  const exists = edges.value.some(e => e.source === params.source && e.target === params.target);
-  if (exists) {
-    ElMessage.warning('该连接已存在');
-    return;
-  }
-
+  // Validation is handled by validateConnection function
   addEdges([{ ...params, type: 'smoothstep', markerEnd: MarkerType.ArrowClosed, style: { stroke: '#667eea', strokeWidth: 2 } }]);
-  
-  // Exit connecting mode after successful connection
-  if (isConnectingMode.value) {
-    isConnectingMode.value = false;
-    ElMessage.success('连线创建成功！拖动节点可调整位置');
-  }
 });
 
 onNodeClick(({ node }) => {
@@ -588,6 +598,11 @@ onMounted(() => {
           fit-view-on-init
           class="fault-tree-flow"
           :delete-key-code="'Backspace'"
+          :connection-line-width="2"
+          :connection-line-type="'smoothstep'"
+          :connection-line-style="{ stroke: '#667eea', strokeWidth: 2 }"
+          :validate-connection="validateConnection"
+          @edge-created="onEdgeCreated"
         >
           <template #node-faultNode="props">
             <FaultTreeNode 
@@ -608,28 +623,27 @@ onMounted(() => {
           </template>
           
           <Background pattern-color="#aaa" :gap="20" variant="dots" />
-          <Controls class="flow-controls" />
         </VueFlow>
       </div>
     </div>
 
     <!-- Right Sidebar - Always Visible -->
     <div class="sidebar sidebar-open">
-      <!-- Node Properties Panel - Shows when node is selected -->
-      <div class="sidebar-panel" :class="{ active: activeSidebar === 'node' && selectedNode }">
+      <!-- AI Chat Panel - Default view when no node selected -->
+      <div class="sidebar-panel" :class="{ active: !selectedNode || activeSidebar === 'ai' || selectedEdge }">
+        <AIChat 
+          :context="aiContext"
+          @update-tree="handleAIUpdate"
+        />
+      </div>
+
+      <!-- Node Properties Panel - Shows only when node is selected -->
+      <div class="sidebar-panel" :class="{ active: selectedNode && activeSidebar === 'node' }">
         <Sidebar 
           :node="selectedNode ? { id: selectedNode.id, ...selectedNode.data } : null"
           @close="activeSidebar = 'node'; selectedNode = null" 
           @update="handleUpdateNode"
           @delete="handleDeleteNode"
-        />
-      </div>
-
-      <!-- AI Chat Panel - Shows when AI button clicked or edge selected -->
-      <div class="sidebar-panel" :class="{ active: activeSidebar === 'ai' || (selectedEdge && activeSidebar !== 'node') }">
-        <AIChat 
-          :context="aiContext"
-          @update-tree="handleAIUpdate"
         />
       </div>
     </div>
@@ -892,7 +906,7 @@ onMounted(() => {
 
 /* Sidebar - Always Visible on Right */
 .sidebar {
-  width: 400px;
+  width: 450px;
   border-left: 1px solid #e5e7eb;
   background: linear-gradient(to bottom, #ffffff, #f8f9fa);
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
@@ -902,7 +916,7 @@ onMounted(() => {
 }
 
 .sidebar-panel {
-  width: 400px;
+  width: 450px;
   height: 100%;
   display: none;
   overflow-y: auto;

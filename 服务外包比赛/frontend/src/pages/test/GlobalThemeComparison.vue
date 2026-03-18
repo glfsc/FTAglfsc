@@ -29,7 +29,6 @@ const activeTheme = ref('element-traditional')
 
 <style scoped>
 .theme-test-container {
-  padding: 20px;
   height: 100vh;
   background: #f5f7fa;
 }
@@ -40,6 +39,10 @@ const activeTheme = ref('element-traditional')
 
 .theme-tabs :deep(.el-tabs__content) {
   height: calc(100% - 55px);
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+.theme-tabs :deep(.el-tab-pane) {
+  height: 100%;
 }
 </style>

@@ -82,6 +82,15 @@ const deleteNode = () => {
     <!-- Content -->
     <div v-if="node" class="flex-1 overflow-y-auto p-6 space-y-8">
       
+      <!-- Node Highlight Effect -->
+      <div class="relative mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-400/10 to-purple-400/10 animate-pulse rounded-xl"></div>
+        <div class="relative flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-indigo-500 animate-pulse"></div>
+          <h3 class="font-bold text-slate-800">Selected: {{ node.label }}</h3>
+        </div>
+      </div>
+      
       <!-- Basic Info Section -->
       <div class="space-y-5">
         <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">

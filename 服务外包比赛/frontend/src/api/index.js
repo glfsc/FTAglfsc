@@ -54,14 +54,14 @@ export const uploadKnowledge = (triplets) => {
 
 /**
  * 上传文件
- * POST /api/v1/fault-tree/upload
+ * POST /api/v1/document/upload
  * @param {File} file - 上传的文件
  */
 export const uploadFile = async (file) => {
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await api.post('/fault-tree/upload', formData, {
+  const response = await api.post('/document/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -71,13 +71,14 @@ export const uploadFile = async (file) => {
 
 /**
  * 提取知识
- * POST /api/v1/fault-tree/extract
+ * POST /api/v1/knowledge/extract
  * @param {Object} data - 提取请求数据
  * @param {string} data.file_id - 文件 ID
  * @param {string} data.mode - 处理模式 (legacy/multimodal)
+ * @param {string} data.top_event - 顶事件名称
  */
 export const extractKnowledge = (data) => {
-  return api.post('/fault-tree/extract', data)
+  return api.post('/knowledge/extract', data)
 }
 
 /**
