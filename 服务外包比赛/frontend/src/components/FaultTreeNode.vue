@@ -227,21 +227,21 @@ const handleConnectionStart = (event: MouseEvent) => {
     </div>
 
     <!-- Connection Handles with Animation and Interaction -->
-    <!-- Input handle at TOP - for receiving connections from parent -->
+    <!-- Input handle at TOP CENTER - for receiving connections from parent -->
     <Handle 
       type="target" 
       :position="Position.Top" 
-      class="!w-6 !h-6 !bg-gradient-to-br !from-indigo-400 !to-indigo-600 !border-2 !border-white !shadow-xl transition-all group-hover:!scale-125 !-top-3 z-20 !opacity-100 hover:!from-green-400 hover:!to-green-600 cursor-crosshair"
+      class="!w-5 !h-5 !bg-gradient-to-br !from-indigo-400 !to-indigo-600 !border-2 !border-white !shadow-xl transition-all group-hover:!scale-125 !-top-2.5 left-1/2 !-translate-x-1/2 z-20 !opacity-100 hover:!from-green-400 hover:!to-green-600 cursor-crosshair"
       @mouseenter="isHovered = true"
       @mousedown="handleConnectionStart"
     />
     
-    <!-- Output handle at BOTTOM - for creating connections to children -->
+    <!-- Output handle at BOTTOM CENTER - for creating connections to children -->
     <Handle 
       v-if="data.type !== '3'" 
       type="source" 
       :position="Position.Bottom" 
-      class="!w-6 !h-6 !bg-gradient-to-br !from-indigo-400 !to-indigo-600 !border-2 !border-white !shadow-xl transition-all group-hover:!scale-125 !-bottom-3 z-20 !opacity-100 hover:!from-green-400 hover:!to-green-600 cursor-crosshair"
+      class="!w-5 !h-5 !bg-gradient-to-br !from-indigo-400 !to-indigo-600 !border-2 !border-white !shadow-xl transition-all group-hover:!scale-125 !-bottom-2.5 left-1/2 !-translate-x-1/2 z-20 !opacity-100 hover:!from-green-400 hover:!to-green-600 cursor-crosshair"
       @mouseenter="isHovered = true"
       @mousedown="handleConnectionStart"
     />

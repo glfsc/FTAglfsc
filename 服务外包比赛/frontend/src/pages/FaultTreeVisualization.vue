@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { VueFlow, useVueFlow, Connection, Edge, Node, MarkerType, EdgeMouseEvent, BaseEdge } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
-import { Download, FileJson, FileImage, FileText, FileType, ChevronDown, Plus, Upload, Trash2, MessageSquare, LayoutGrid } from 'lucide-vue-next';
+import { Download, FileJson, FileImage, FileText, FileType, ChevronDown, Plus, Upload, Trash2, MessageSquare, LayoutGrid, Undo, Redo } from 'lucide-vue-next';
 import FaultTreeNode from '../components/FaultTreeNode.vue';
 import Sidebar from '../components/Sidebar.vue';
 import AIChat from '../components/AIChat.vue';
@@ -24,8 +24,59 @@ const activeSidebar = ref<'ai' | 'node'>('node'); // Default to node properties
 const isExportMenuOpen = ref(false);
 const isConnectingMode = ref(false);
 const editableMode = ref(true); // Enable editing mode by default
+const historyStack = ref<Array<{ nodes: Node[], edges: Edge[] }>>([]);
+const futureStack = ref<Array<{ nodes: Node[], edges: Edge[] }>>([]);
 
 const { onConnect, addEdges, onNodeClick, onPaneClick, onEdgeClick, getNodes, getNodesBounds, getViewport, setViewport, fitView, removeEdges } = useVueFlow();
+
+// History management for undo/redo
+const saveToHistory = () => {
+  const snapshot = {
+    nodes: JSON.parse(JSON.stringify(nodes.value)),
+    edges: JSON.parse(JSON.stringify(edges.value))
+  };
+  historyStack.value.push(snapshot);
+  if (historyStack.value.length > 50) {
+    historyStack.value.shift();
+  }
+  futureStack.value = [];
+};
+
+const undo = () => {
+  if (historyStack.value.length === 0) {
+    ElMessage.warning('没有可撤销的操作');
+    return;
+  }
+  const currentSnapshot = {
+    nodes: JSON.parse(JSON.stringify(nodes.value)),
+    edges: JSON.parse(JSON.stringify(edges.value))
+  };
+  futureStack.value.push(currentSnapshot);
+  const previousSnapshot = historyStack.value.pop();
+  if (previousSnapshot) {
+    nodes.value = previousSnapshot.nodes;
+    edges.value = previousSnapshot.edges;
+    ElMessage.success('已撤销上一步操作');
+  }
+};
+
+const redo = () => {
+  if (futureStack.value.length === 0) {
+    ElMessage.warning('没有可重做的操作');
+    return;
+  }
+  const currentSnapshot = {
+    nodes: JSON.parse(JSON.stringify(nodes.value)),
+    edges: JSON.parse(JSON.stringify(edges.value))
+  };
+  historyStack.value.push(currentSnapshot);
+  const nextSnapshot = futureStack.value.pop();
+  if (nextSnapshot) {
+    nodes.value = nextSnapshot.nodes;
+    edges.value = nextSnapshot.edges;
+    ElMessage.success('已重做操作');
+  }
+};
 
 // Validate connection rules
 const validateConnection = (connection: Connection) => {
@@ -114,6 +165,7 @@ onPaneClick(() => {
 });
 
 const handleAddNode = () => {
+  saveToHistory();
   const id = `node-${Date.now()}`;
   const newNode: Node = {
     id,
@@ -154,8 +206,10 @@ const handleDeleteNode = (id: string) => {
 
 const handleDeleteSelected = () => {
   if (selectedNode.value) {
+    saveToHistory();
     handleDeleteNode(selectedNode.value.id);
   } else if (selectedEdge.value) {
+    saveToHistory();
     removeEdges([selectedEdge.value.id]);
     ElMessage.success('连线已删除');
     selectedEdge.value = null;
@@ -164,6 +218,7 @@ const handleDeleteSelected = () => {
     const selectedNodes = nodes.value.filter((n) => n.selected);
     if (selectedNodes.length > 0) {
       if (confirm(`确定要删除这 ${selectedNodes.length} 个选中的节点吗？`)) {
+        saveToHistory();
         const idsToDelete = new Set(selectedNodes.map((n) => n.id));
         nodes.value = nodes.value.filter((n) => !idsToDelete.has(n.id));
         edges.value = edges.value.filter((e) => !idsToDelete.has(e.source) && !idsToDelete.has(e.target));
@@ -499,6 +554,15 @@ onMounted(() => {
             <span>Add Event</span>
           </button>
           <div class="toolbar-divider"></div>
+          <button @click="undo" class="toolbar-btn" :disabled="historyStack.length === 0" title="Undo">
+            <Undo class="w-5 h-5" />
+            <span>Undo</span>
+          </button>
+          <button @click="redo" class="toolbar-btn" :disabled="futureStack.length === 0" title="Redo">
+            <Redo class="w-5 h-5" />
+            <span>Redo</span>
+          </button>
+          <div class="toolbar-divider"></div>
           <button @click="toggleConnectingMode" class="toolbar-btn" :class="{ active: isConnectingMode }" title="Connect Nodes">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="6" cy="6" r="3"/>
@@ -603,6 +667,9 @@ onMounted(() => {
           :connection-line-style="{ stroke: '#667eea', strokeWidth: 2 }"
           :validate-connection="validateConnection"
           @edge-created="onEdgeCreated"
+          :nodes-draggable="true"
+          :nodes-connectable="true"
+          :select-nodes-on-click="true"
         >
           <template #node-faultNode="props">
             <FaultTreeNode 

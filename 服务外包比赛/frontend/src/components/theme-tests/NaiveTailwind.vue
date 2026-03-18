@@ -30,7 +30,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">拖拽节点右下角手柄创建连线</span>
+        <span class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">拖拽节点下方手柄创建连线 · 将连线拖到节点上方圆点完成连接</span>
       </div>
     </header>
 
@@ -65,6 +65,8 @@
           <div class="flex items-center gap-2">
             <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!canUndo" @click="handleUndo">撤销</button>
             <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!canRedo" @click="handleRedo">重做</button>
+            <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200" @click="handleAddNode">新增节点</button>
+            <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!selectedNodeId && !selectedEdgeId" @click="handleDeleteSelected">删除节点</button>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">Ctrl+Z/Ctrl+Y · Tab/方向键/Del</span>
@@ -101,7 +103,6 @@
                   :stroke-width="edge.style.width"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  :stroke-dasharray="edge.style.pattern === 'dashed' ? '8 8' : '0'"
                   :filter="edge.id === selectedEdgeId ? 'url(#c-edge-glow)' : 'none'"
                   class="cursor-pointer"
                   @click.stop="handleSelectEdge(edge.id)"
@@ -129,22 +130,6 @@
                     @mousedown.stop="handleStartReconnectDrag(edge.id, 'target', $event)"
                   />
                 </g>
-                <g v-if="edge.label">
-                  <rect
-                    :x="edge.labelPos.x - edge.labelBox.w / 2"
-                    :y="edge.labelPos.y - edge.labelBox.h / 2"
-                    :width="edge.labelBox.w"
-                    :height="edge.labelBox.h"
-                    rx="10"
-                    :fill="'var(--c-surface-2)'"
-                    :stroke="'var(--c-border)'"
-                    fill-opacity="0.92"
-                    stroke-width="1"
-                  />
-                  <text :x="edge.labelPos.x" :y="edge.labelPos.y + 4" text-anchor="middle" :fill="'var(--c-text)'" class="select-none text-[12px]">
-                    {{ edge.label }}
-                  </text>
-                </g>
               </g>
 
               <path
@@ -153,7 +138,6 @@
                 fill="none"
                 stroke="rgba(34, 211, 238, 0.9)"
                 stroke-width="2"
-                stroke-dasharray="6 6"
                 stroke-linecap="round"
               />
               <path
@@ -162,12 +146,11 @@
                 fill="none"
                 stroke="rgba(167, 139, 250, 0.9)"
                 stroke-width="2"
-                stroke-dasharray="6 6"
                 stroke-linecap="round"
               />
             </svg>
 
-            <ParticleBurst ref="particleRef" class="absolute inset-0 z-30" :enabled="particleEnabled" :gravity-decay="0.98" :life-ms="800" :count="20" />
+            <ParticleBurst ref="particleRef" class="absolute inset-0 z-30 pointer-events-none" :enabled="particleEnabled" :gravity-decay="0.98" :life-ms="800" :count="20" />
 
               <div
                 v-for="node in nodes"
@@ -180,7 +163,7 @@
                   node.type === 'basic' ? 'border-emerald-400/30 bg-emerald-500/10' : ''
                 ]"
                 :style="{ left: node.x + 'px', top: node.y + 'px' }"
-                @mousedown="handleNodeMouseDown(node, event)"
+                @mousedown="handleNodeMouseDown(node, $event)"
                 @click.stop="handleSelectNode(node.id, { focus: true })"
                 @focus="handleSelectNode(node.id, { effects: false })"
                 @keydown.enter.prevent="handleSelectNode(node.id, { focus: true })"
@@ -203,10 +186,19 @@
                 <div class="mt-1 text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">ID：{{ node.id }}</div>
             
                 <button
-                  class="c-handle absolute -right-3 bottom-2 w-5 h-5 rounded-full border border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/30 transition cursor-crosshair"
+                  class="c-handle absolute left-1/2 -translate-x-1/2 -bottom-3 w-5 h-5 rounded-full border border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/30 transition cursor-crosshair"
                   title="拖拽创建连线"
                   aria-label="从该节点拖拽创建连线"
+                  :data-node-id="node.id"
+                  data-handle="out"
                   @mousedown.stop="handleStartConnect(node.id, $event)"
+                />
+                <button
+                  class="c-handle absolute left-1/2 -translate-x-1/2 -top-3 w-5 h-5 rounded-full border border-violet-300/40 bg-violet-400/15 hover:bg-violet-400/25 transition cursor-crosshair"
+                  title="将连线拖到此处完成连接"
+                  aria-label="将连线拖到该节点上方圆点完成连接"
+                  :data-node-id="node.id"
+                  data-handle="in"
                 />
               </div>
           </div>
@@ -266,10 +258,6 @@
           <!-- Edge Highlight Indicator -->
           <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 to-violet-400 animate-pulse"></div>
           
-          <div class="space-y-1.5">
-            <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">标签</div>
-            <input v-model="edgeForm.label" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" placeholder="例如：因果/证据说明" @blur="commitEdgeForm" />
-          </div>
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
               <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">颜色</div>
@@ -306,9 +294,9 @@
           <div class="space-y-1.5">
             <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">事件类型</div>
             <select v-model="nodeForm.type" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitNodeForm">
-              <option value="top">顶事件</option>
-              <option value="middle">中间事件</option>
-              <option value="basic">基本事件</option>
+              <option value="top" style="background: #ffffff; color: #0f172a;">顶事件</option>
+              <option value="middle" style="background: #ffffff; color: #0f172a;">中间事件</option>
+              <option value="basic" style="background: #ffffff; color: #0f172a;">基本事件</option>
             </select>
           </div>
           <div class="space-y-1.5">
@@ -350,7 +338,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import ParticleBurst from './ParticleBurst.vue'
-import { HistoryManager, canAddEdge, createIncrementId, defaultClone, resolveDragCollision, snapToGrid } from './naiveTailwindCore'
+import { HistoryManager, canAddEdge, createIncrementId, defaultClone, deleteEdge, deleteNodeAndRelatedEdges, normalizeEdgeStyle, pointsToPolylinePath, resolveDragCollision, snapToGrid } from './naiveTailwindCore'
 
 const props = defineProps({
   initialAutoAlign: { type: Boolean, default: true },
@@ -403,11 +391,11 @@ const nodes = ref([
 ])
 
 const edges = ref([
-  { id: 'E-1', source: 'N-1', target: 'N-2', label: 'OR 分支', style: { color: '#22d3ee', width: 2, pattern: 'solid', shape: 'smart' } },
-  { id: 'E-2', source: 'N-1', target: 'N-3', label: '证据：供电异常', style: { color: '#a78bfa', width: 2, pattern: 'dashed', shape: 'smart' } },
-  { id: 'E-3', source: 'N-1', target: 'N-4', label: '', style: { color: '#38bdf8', width: 2, pattern: 'solid', shape: 'smart' } },
-  { id: 'E-4', source: 'N-2', target: 'N-5', label: 'AND 输入', style: { color: '#34d399', width: 2, pattern: 'solid', shape: 'smart' } },
-  { id: 'E-5', source: 'N-2', target: 'N-6', label: '', style: { color: '#34d399', width: 2, pattern: 'solid', shape: 'smart' } }
+  { id: 'E-1', source: 'N-1', target: 'N-2', style: { color: '#22d3ee', width: 4 } },
+  { id: 'E-2', source: 'N-1', target: 'N-3', style: { color: '#a78bfa', width: 4 } },
+  { id: 'E-3', source: 'N-1', target: 'N-4', style: { color: '#38bdf8', width: 4 } },
+  { id: 'E-4', source: 'N-2', target: 'N-5', style: { color: '#34d399', width: 4 } },
+  { id: 'E-5', source: 'N-2', target: 'N-6', style: { color: '#34d399', width: 4 } }
 ])
 
 const selectedNodeId = ref('N-3')
@@ -445,11 +433,8 @@ const edgeForm = reactive({
   id: '',
   source: '',
   target: '',
-  label: '',
   color: '#22d3ee',
-  width: 2,
-  pattern: 'solid',
-  shape: 'smart'
+  width: 4
 })
 
 const nodeForm = reactive({
@@ -487,21 +472,16 @@ watch(
       edgeForm.id = ''
       edgeForm.source = ''
       edgeForm.target = ''
-      edgeForm.label = ''
       edgeForm.color = '#22d3ee'
-      edgeForm.width = 2
-      edgeForm.pattern = 'solid'
-      edgeForm.shape = 'smart'
+      edgeForm.width = 4
       return
     }
     edgeForm.id = selectedEdge.value.id
     edgeForm.source = selectedEdge.value.source
     edgeForm.target = selectedEdge.value.target
-    edgeForm.label = selectedEdge.value.label ?? ''
-    edgeForm.color = selectedEdge.value.style?.color ?? '#22d3ee'
-    edgeForm.width = selectedEdge.value.style?.width ?? 2
-    edgeForm.pattern = selectedEdge.value.style?.pattern ?? 'solid'
-    edgeForm.shape = selectedEdge.value.style?.shape ?? 'smart'
+    const style = normalizeEdgeStyle(selectedEdge.value.style, { defaultColor: '#22d3ee', defaultWidth: 4 })
+    edgeForm.color = style.color
+    edgeForm.width = style.width
   },
   { immediate: true }
 )
@@ -515,10 +495,9 @@ const nodeTypeText = (type) => {
 const getNodeAnchor = (nodeId) => {
   const node = nodes.value.find((n) => n.id === nodeId)
   if (!node) return { in: { x: 0, y: 0 }, out: { x: 0, y: 0 } }
-  // Modified: Output at bottom-right corner where handle is
   return {
-    in: { x: node.x + nodeWidth / 2, y: node.y }, // Top center for input
-    out: { x: node.x + nodeWidth, y: node.y + nodeHeight - 16 } // Bottom-right corner (where handle is)
+    in: { x: node.x + nodeWidth / 2, y: node.y },
+    out: { x: node.x + nodeWidth / 2, y: node.y + nodeHeight }
   }
 }
 
@@ -527,17 +506,30 @@ const updateCanvasSize = () => {
   canvasSize.value = { width: canvasRef.value.clientWidth, height: canvasRef.value.clientHeight }
 }
 
+const canvasResizeObserver = ref(null)
+
 onMounted(() => {
   updateCanvasSize()
+  nextTick(() => {
+    updateCanvasSize()
+    requestAnimationFrame(() => updateCanvasSize())
+  })
+  let ro
+  if (typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(() => updateCanvasSize())
+    if (canvasRef.value) ro.observe(canvasRef.value)
+  }
+  canvasResizeObserver.value = ro ?? null
   window.addEventListener('resize', updateCanvasSize)
-  window.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('keydown', handleGlobalKeydown, true)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateCanvasSize)
   window.removeEventListener('mousemove', handleDragging)
   window.removeEventListener('mouseup', stopDragging)
-  window.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('keydown', handleGlobalKeydown, true)
+  canvasResizeObserver.value?.disconnect?.()
 })
 
 const updateNodeById = (id, patch) => {
@@ -572,10 +564,10 @@ const commitNodeForm = () => {
 const commitEdgeForm = () => {
   if (!selectedEdge.value) return
   const id = selectedEdge.value.id
-  const nextStyle = { color: edgeForm.color, width: Number(edgeForm.width) || 2, pattern: edgeForm.pattern, shape: edgeForm.shape }
-  const before = { label: selectedEdge.value.label ?? '', style: defaultClone(selectedEdge.value.style ?? {}) }
-  const after = { label: edgeForm.label, style: nextStyle }
-  if (before.label === after.label && JSON.stringify(before.style) === JSON.stringify(after.style)) return
+  const nextStyle = normalizeEdgeStyle({ color: edgeForm.color, width: Number(edgeForm.width) || 0 }, { defaultColor: '#22d3ee', defaultWidth: 4 })
+  const before = { style: normalizeEdgeStyle(selectedEdge.value.style, { defaultColor: '#22d3ee', defaultWidth: 4 }) }
+  const after = { style: nextStyle }
+  if (before.style.color === after.style.color && before.style.width === after.style.width) return
   exec({ do: () => updateEdgeById(id, after), undo: () => updateEdgeById(id, before) })
 }
 
@@ -652,12 +644,13 @@ const nextNodeId = createIncrementId('N-', maxNumber(nodes.value.map((n) => n.id
 const nextEdgeId = createIncrementId('E-', maxNumber(edges.value.map((e) => e.id), 'E-') + 1)
 
 const deleteEdgeById = (id) => {
-  edges.value = edges.value.filter((e) => e.id !== id)
+  edges.value = deleteEdge(edges.value, id)
 }
 
 const deleteNodeById = (id) => {
-  nodes.value = nodes.value.filter((n) => n.id !== id)
-  edges.value = edges.value.filter((e) => e.source !== id && e.target !== id)
+  const res = deleteNodeAndRelatedEdges(nodes.value, edges.value, id)
+  nodes.value = res.nodes
+  edges.value = res.edges
 }
 
 const addNode = () => {
@@ -688,13 +681,16 @@ const handleDeleteSelected = () => {
   if (selectedEdgeId.value) {
     const deleteEdgeId = selectedEdgeId.value
     const edgeSnapshot = defaultClone(edges.value.find((e) => e.id === deleteEdgeId))
+    if (!edgeSnapshot) return
+    // Clear selection first to avoid any reactivity race
+    selectedEdgeId.value = ''
     exec({
       do: () => {
         deleteEdgeById(deleteEdgeId)
-        selectedEdgeId.value = ''
       },
       undo: () => {
-        if (edgeSnapshot) edges.value.push(edgeSnapshot)
+        edges.value = [...edges.value, edgeSnapshot]
+        selectedEdgeId.value = deleteEdgeId
       }
     })
     return
@@ -703,16 +699,19 @@ const handleDeleteSelected = () => {
   if (!selectedNodeId.value) return
   const deleteNodeId = selectedNodeId.value
   const nodeSnapshot = defaultClone(nodes.value.find((n) => n.id === deleteNodeId))
+  if (!nodeSnapshot) return
   const edgeSnapshots = defaultClone(edges.value.filter((e) => e.source === deleteNodeId || e.target === deleteNodeId))
+  // Clear selection first to avoid any reactivity race
+  selectedNodeId.value = ''
+  selectedEdgeId.value = ''
   exec({
     do: () => {
       deleteNodeById(deleteNodeId)
-      selectedNodeId.value = ''
-      selectedEdgeId.value = ''
     },
     undo: () => {
-      if (nodeSnapshot) nodes.value.push(nodeSnapshot)
-      if (Array.isArray(edgeSnapshots) && edgeSnapshots.length) edges.value.push(...edgeSnapshots)
+      nodes.value = [...nodes.value, nodeSnapshot]
+      edges.value = [...edges.value, ...edgeSnapshots]
+      selectedNodeId.value = deleteNodeId
     }
   })
 }
@@ -834,12 +833,13 @@ const connectPreviewPath = computed(() => {
     { x: Math.max(from.x + 30, (from.x + to.x) / 2), y: to.y },
     to
   ]
-  return pointsToRoundedPath(points, 10)
+  return pointsToPolylinePath(points)
 })
 
 const handleStartConnect = (fromId, event) => {
   if (!canvasRef.value) return
   const fromNode = nodes.value.find(n => n.id === fromId)
+  const rect = canvasRef.value.getBoundingClientRect()
   
   // Validation: Check if trying to connect from Top Event to Basic Event
   if (fromNode?.type === 'top') {
@@ -862,7 +862,7 @@ const reconnectPreviewPath = computed(() => {
     { x: (fixed.x + to.x) / 2, y: to.y },
     to
   ]
-  return pointsToRoundedPath(points, 10)
+  return pointsToPolylinePath(points)
 })
 
 const handleStartReconnectDrag = (edgeId, end, event) => {
@@ -880,9 +880,10 @@ const handleCanvasMouseMove = (event) => {
 
 const handleCanvasMouseUp = (event) => {
   if (reconnectDrag.value) {
-    const nodeEl = event.target?.closest?.('[data-node-id]')
-    const nextNodeId = nodeEl?.dataset?.nodeId
     const drag = reconnectDrag.value
+    const selector = drag.end === 'source' ? '[data-handle="out"]' : '[data-handle="in"]'
+    const nodeEl = event.target?.closest?.(selector)
+    const nextNodeId = nodeEl?.dataset?.nodeId
     reconnectDrag.value = null
     if (!nextNodeId) return
     const edge = edges.value.find((e) => e.id === drag.edgeId)
@@ -899,7 +900,7 @@ const handleCanvasMouseUp = (event) => {
   }
 
   if (!connectDrag.value) return
-  const nodeEl = event.target?.closest?.('[data-node-id]')
+  const nodeEl = event.target?.closest?.('[data-handle="in"]')
   const targetId = nodeEl?.dataset?.nodeId
   const fromId = connectDrag.value.fromId
   connectDrag.value = null
@@ -919,7 +920,7 @@ const handleCanvasMouseUp = (event) => {
   }
 
   const id = nextEdgeId()
-  const edge = { id, source: fromId, target: targetId, label: '', style: { color: '#22d3ee', width: 2, pattern: 'solid', shape: 'smart' } }
+  const edge = { id, source: fromId, target: targetId, style: { color: '#22d3ee', width: 4 } }
   exec({
     do: () => edges.value.push(edge),
     undo: () => {
@@ -953,7 +954,14 @@ const handleGlobalKeydown = (event) => {
   }
 
   // Delete with Delete or Backspace key
-  if (!isTyping && (event.key === 'Delete' || event.key === 'Backspace')) {
+  const key = event.key
+  const isDeleteKey =
+    key === 'Delete' ||
+    key === 'Del' ||
+    key === 'Backspace' ||
+    event.keyCode === 46 ||
+    event.keyCode === 8
+  if (!isTyping && isDeleteKey) {
     if (selectedEdgeId.value || selectedNodeId.value) {
       event.preventDefault()
       handleDeleteSelected()
@@ -1245,7 +1253,7 @@ const getNodePorts = (nodeId) => {
   const offset = 26
   return {
     out: a.out,
-    outOuter: { x: a.out.x + offset, y: a.out.y },
+    outOuter: { x: a.out.x, y: a.out.y + offset },
     in: a.in,
     inOuter: { x: a.in.x, y: a.in.y - offset }
   }
@@ -1277,27 +1285,98 @@ const computeSmartPathPoints = (sourceId, targetId, grid) => {
   return out
 }
 
+const normalizePolylinePoints = (points) => {
+  const out = []
+  for (const p of points ?? []) appendUniquePoint(out, p)
+  return out
+}
+
+const segmentIntersectsRect = (a, b, rect) => {
+  if (!a || !b || !rect) return false
+  if (a.x === b.x) {
+    const x = a.x
+    if (x < rect.left || x > rect.right) return false
+    const y0 = Math.min(a.y, b.y)
+    const y1 = Math.max(a.y, b.y)
+    return y1 >= rect.top && y0 <= rect.bottom
+  }
+  if (a.y === b.y) {
+    const y = a.y
+    if (y < rect.top || y > rect.bottom) return false
+    const x0 = Math.min(a.x, b.x)
+    const x1 = Math.max(a.x, b.x)
+    return x1 >= rect.left && x0 <= rect.right
+  }
+  return segmentIntersectsRect(a, { x: b.x, y: a.y }, rect) || segmentIntersectsRect({ x: b.x, y: a.y }, b, rect)
+}
+
+const pathIntersectsNodes = (points, { ignore = new Set() } = {}) => {
+  const pad = 14
+  const rects = nodes.value.map((n) => ({
+    id: n.id,
+    left: n.x - pad,
+    top: n.y - pad,
+    right: n.x + nodeWidth + pad,
+    bottom: n.y + nodeHeight + pad
+  }))
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]
+    const b = points[i]
+    for (const r of rects) {
+      if (ignore.has(r.id)) continue
+      if (segmentIntersectsRect(a, b, r)) return true
+    }
+  }
+  return false
+}
+
+const computeSmoothOrthoPoints = (sourceId, targetId, grid) => {
+  const source = getNodePorts(sourceId)
+  const target = getNodePorts(targetId)
+  const ignore = new Set([sourceId, targetId])
+  const step = gridStep
+
+  const start = source.outOuter
+  const end = target.inOuter
+  const baseY = snapToGrid((start.y + end.y) / 2, step)
+  const minY = 8
+  const maxY = Math.max(minY, (canvasSize.value?.height ?? 900) - 8)
+
+  const candidates = []
+  for (let k = 0; k <= 14; k++) {
+    const dy = k * step
+    candidates.push(baseY + dy)
+    if (k > 0) candidates.push(baseY - dy)
+  }
+
+  for (const y of candidates) {
+    if (y < minY || y > maxY) continue
+    const pts = normalizePolylinePoints([
+      source.out,
+      start,
+      { x: start.x, y },
+      { x: end.x, y },
+      end,
+      target.in
+    ])
+    const simplified = simplifyPoints(pts)
+    if (!pathIntersectsNodes(simplified, { ignore })) return simplified
+  }
+
+  return computeSmartPathPoints(sourceId, targetId, grid)
+}
+
 const edgeRenders = computed(() => {
   const step = 18
   const grid = buildObstacleGrid(step)
   return edges.value
     .filter((e) => e.source && e.target)
     .map((e) => {
-      const style = e.style ?? { color: '#22d3ee', width: 2, pattern: 'solid', shape: 'smart' }
+      const style = normalizeEdgeStyle(e.style, { defaultColor: '#22d3ee', defaultWidth: 4 })
       const endpoints = { source: getNodeAnchor(e.source).out, target: getNodeAnchor(e.target).in }
-      if (style.shape === 'bezier') {
-        const path = pointsToBezierPath(endpoints.source, endpoints.target)
-        const labelPos = { x: (endpoints.source.x + endpoints.target.x) / 2, y: (endpoints.source.y + endpoints.target.y) / 2 }
-        const labelBox = computeLabelBox(e.label)
-        return { id: e.id, source: e.source, target: e.target, label: e.label ?? '', style, path, labelPos, labelBox, endpoints }
-      }
-
-      const points = computeSmartPathPoints(e.source, e.target, grid)
-      const radius = style.shape === 'smooth' ? 16 : 10
-      const path = pointsToRoundedPath(points, radius)
-      const labelPos = computeMidPointOnPolyline(points)
-      const labelBox = computeLabelBox(e.label)
-      return { id: e.id, source: e.source, target: e.target, label: e.label ?? '', style, path, labelPos, labelBox, endpoints }
+      const points = computeSmoothOrthoPoints(e.source, e.target, grid)
+      const path = pointsToRoundedPath(points, 12)
+      return { id: e.id, source: e.source, target: e.target, style, path, endpoints }
     })
 })
 </script>

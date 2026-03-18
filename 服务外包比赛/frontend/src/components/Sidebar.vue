@@ -115,15 +115,13 @@ const deleteNode = () => {
             <select 
               v-model="form.type" 
               @change="updateNode"
-              class="w-full px-4 py-2.5 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all appearance-none cursor-pointer shadow-sm hover:shadow-md"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all appearance-none cursor-pointer shadow-sm hover:shadow-md"
+              style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 24 24%22 stroke=%22%2394a3b8%22%3E%3Cpath stroke-linecap=%22round%22 stroke-linejoin=%22round%22 stroke-width=%222%22 d=%22M19 9l-7 7-7-7%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;"
             >
-              <option value="1">● Top Event (Root)</option>
-              <option value="2">◆ Intermediate Event</option>
-              <option value="3">■ Basic Event (Leaf)</option>
+              <option value="1" class="bg-white text-slate-800">● Top Event (Root)</option>
+              <option value="2" class="bg-white text-slate-800">◆ Intermediate Event</option>
+              <option value="3" class="bg-white text-slate-800">■ Basic Event (Leaf)</option>
             </select>
-            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
           </div>
         </div>
       </div>
