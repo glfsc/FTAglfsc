@@ -1,0 +1,35 @@
+{
+  "name": "fault-tree-export-service",
+  "version": "1.0.0",
+  "description": "故障树高保真导出后端服务 - Puppeteer + Sharp",
+  "type": "module",
+  "main": "export-service.js",
+  "scripts": {
+    "start": "node export-service.js",
+    "dev": "nodemon export-service.js",
+    "test": "node test-export.js"
+  },
+  "keywords": [
+    "export",
+    "puppeteer",
+    "sharp",
+    "pdf",
+    "image"
+  ],
+  "author": "故障树项目组",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^24.15.0",
+    "sharp": "^0.33.1",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

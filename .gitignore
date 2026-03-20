@@ -1,2 +1,39 @@
 /.vscode
 /os_experment
+
+# Node.js 依赖
+node_modules/
+package-lock.json
+
+# Python 虚拟环境和缓存
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+*.egg-info/
+
+# IDE 配置
+.idea/
+*.swp
+*.swo
+*.swn
+
+# 构建产物
+dist/
+dist-test/
+build/
+
+# 日志文件
+*.log
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+uploads/
+exports/
+data/output/
