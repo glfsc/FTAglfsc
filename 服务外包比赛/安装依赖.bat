@@ -4,11 +4,11 @@ echo 故障树智能生成系统 - 依赖安装
 echo ========================================
 
 echo.
-echo [1/2] 安装后端依赖（conda环境：fsy）...
-call conda activate fsy
+echo [1/2] 安装后端依赖（conda 环境：csso）...
+call conda activate csso
 if errorlevel 1 (
-    echo 错误：无法激活conda环境fsy
-    echo 请先创建环境：conda create -n fsy python=3.9
+    echo 错误：无法激活 conda 环境 csso
+    echo 请先创建环境：conda create -n csso python=3.10
     pause
     exit /b 1
 )

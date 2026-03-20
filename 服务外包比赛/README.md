@@ -131,7 +131,7 @@ CSSO/
 ### 后端技术
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| **Python** | 3.8+ | 主要编程语言 |
+| **Python** | 3.10 | 主要编程语言 |
 | **FastAPI** | 0.109.0 | 高性能 Web 框架 |
 | **Pydantic** | 2.5.3 | 数据验证和序列化 |
 | **Neo4j** | 5.16.0 | 知识图谱数据库 |
@@ -160,7 +160,7 @@ CSSO/
 ## 🚀 快速开始
 
 ### 环境要求
-- Python 3.8+
+- Python 3.10
 - Node.js 16+
 - Neo4j 4.x+（或 5.x）
 
@@ -218,7 +218,7 @@ npm run dev
 ```
 
 ### 6️⃣ 访问应用
-- 前端：http://localhost:5173
+- 前端：http://localhost:3000 
 - 后端 API文档：http://localhost:8000/docs
 
 ---
@@ -375,138 +375,3 @@ feature/*     # 功能分支
 bugfix/*      # 修复分支
 ```
 
-### 开发流程
-1. **创建功能分支**
-   ```bash
-   git checkout develop
-   git checkout -b feature/your-feature
-   ```
-
-2. **本地开发**
-   ```bash
-   # 修改代码后运行测试
-   cd backend
-   .\运行测试.bat  # 选择对应模块测试
-   
-   # 确保测试通过
-   ```
-
-3. **提交代码**
-   ```bash
-   git add .
-   git commit -m "feat: 添加 XXX 功能"
-   ```
-
-4. **推送并创建 PR**
-   ```bash
-   git push origin feature/your-feature
-   # 在 GitHub/GitLab 创建 Pull Request
-   ```
-
-### 代码规范
-
-#### Python
-- 遵循 PEP 8 规范
-- 使用 type hints
-- 函数需要 docstring
-- 测试覆盖率 > 80%
-
-```python
-def extract_knowledge(text: str, source: str) -> Dict[str, Any]:
-    """
-    从文本中提取故障知识
-    
-    Args:
-        text: 输入文本
-        source: 来源标记
-        
-    Returns:
-        包含三元组的字典
-    """
-    pass
-```
-
-#### Vue
-- 使用 Composition API
-- 组件名 PascalCase
-- Props 类型检查
-
-```vue
-<script setup lang="ts">
-import { ref, computed } from 'vue';
-
-interface Props {
-  nodeData: NodeData;
-  editable?: boolean;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  editable: true
-});
-</script>
-```
-
-### 沟通协作
-- **每日站会**: 同步进度和问题
-- **代码审查**: PR 需要至少一人 review
-- **文档更新**: 功能完成后更新相关文档
-
----
-
-## 📝 常见问题
-
-### Q1: Neo4j 连接失败？
-A: 检查 `.env` 中的配置，确保 Neo4j 服务已启动：
-```bash
-neo4j start  # Linux/macOS
-neo4j console  # Windows
-```
-
-### Q2: API Key 无效？
-A: 确认 `DASHSCOPE_API_KEY` 配置正确，查看[ DashScope 官网](https://dashscope.aliyuncs.com/)
-
-### Q3: 前端跨域问题？
-A: 后端已配置 CORS，如仍有问题检查 `main.py` 中的中间件配置。
-
-### Q4: 测试导入错误？
-A: 确保在项目根目录运行 pytest，或调用 `add_project_to_path()`。
-
----
-
-## 📚 相关文档
-
-- `backend/README.md`: 后端详细说明
-- `frontend/README.md`: 前端详细说明
-- `backend/测试框架使用指南.md`: 测试使用指南
-- `API文档.md`: API接口完整文档
-- `服务外包比赛/技术实现方案.md`: 技术架构文档
-
----
-
-## 🎯 下一步计划
-
-### 待开发功能
-- [ ] 用户认证和权限管理
-- [ ] 故障树版本控制
-- [ ] 多人协作编辑
-- [ ] 更多导出格式（SVG、Excel）
-- [ ] 性能优化（缓存、异步任务）
-
-### 技术债务
-- [ ] 增加单元测试覆盖率到 90%
-- [ ] 添加 API 限流中间件
-- [ ] 优化数据库查询性能
-- [ ] 完善错误处理和日志记录
-
----
-
-## 📞 联系方式
-
-如有问题，请通过以下方式联系：
-- 项目 Issues: https://github.com/your-repo/issues
-- 团队邮箱：team@example.com
-
----
-
-**最后更新**: 2026-03-15  
-**维护者**: 故障树开发团队

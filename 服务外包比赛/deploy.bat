@@ -7,7 +7,7 @@ echo.
 echo [1/4] 激活conda环境 csso(经过更改）...
 call conda activate csso
 if errorlevel 1 (
-    echo 错误：无法激活conda环境fsy，请确认环境已创建
+    echo 错误：无法激活 conda 环境 csso，请确认环境已创建
     pause
     exit /b 1
 )

@@ -4,8 +4,8 @@ echo 故障树智能生成系统 - 快速启动
 echo ========================================
 
 echo.
-echo 正在启动后端服务（conda环境：fsy）...
-start cmd /k "cd /d %~dp0 & call conda activate fsy & cd backend & python main.py"
+echo 正在启动后端服务（conda 环境：csso）...
+start cmd /k "cd /d %~dp0 & call conda activate csso & cd backend & python main.py"
 
 timeout /t 3 /nobreak >nul
 
