@@ -102,7 +102,7 @@ class FaultTreeService:
                 "status": "completed",
                 "progress": 1.0,
                 "output_file": output_path,
-                "traceability": [{"file": request.file_id, "timestamp": str(json.dumps(os.path.getmtime(file_path)))}],
+                "traceability": [{"file": request.file_id, "timestamp": str(os.path.getmtime(file_path))}],
                 "accuracy_metrics": {
                     "avg_confidence": sum(t["confidence"] for t in triplets) / len(triplets) if triplets else 0.0
                 }

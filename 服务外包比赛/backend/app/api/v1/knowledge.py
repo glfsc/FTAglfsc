@@ -6,6 +6,7 @@
 """
 
 import logging
+import json
 from fastapi import APIRouter, HTTPException, Depends, Request
 from app.models.schemas import (
     KnowledgeExtractRequest,
@@ -42,10 +43,13 @@ async def extract_knowledge(
     Returns:
         提取的三元组、事件和逻辑门
     """
+    import json
     try:
+        logger.info(f"开始处理知识提取请求：file_id={request.file_id}, top_event={request.top_event}")
         result = service.extract_knowledge(request)
         
-        return {
+        # 计算响应数据大小
+        response_data = {
             "task_id": result["task_id"],
             "triplets": result["triplets"],
             "events": result["events"],
@@ -54,11 +58,17 @@ async def extract_knowledge(
             "progress": result["progress"],
             "traceability": result.get("traceability"),
             "accuracy_metrics": result.get("accuracy_metrics"),
-            "output_file": result.get("output_file")  # 用于测试的输出文件路径
+            "output_file": result.get("output_file")
         }
         
+        response_size = len(json.dumps(response_data, ensure_ascii=False))
+        logger.info(f"知识提取完成：triplets={len(result['triplets'])}, events={len(result['events'])}, gates={len(result['gates'])}, response_size={response_size} bytes")
+        
+        return response_data
+        
     except FileNotFoundError as e:
+        logger.error(f"文件未找到：{str(e)}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"知识提取失败：{str(e)}")
+        logger.error(f"知识提取失败：{str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"知识提取失败：{str(e)}")

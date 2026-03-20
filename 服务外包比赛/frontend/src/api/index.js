@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 // 创建 axios 实例
 const api = axios.create({
   baseURL: '/api/v1',
-  timeout: 120000,  // 增加到 120 秒
+  timeout: 300000,  // 增加到 300 秒（5 分钟），因为知识抽取可能需要较长时间
   headers: {
     'Content-Type': 'application/json'
   }
@@ -13,23 +13,49 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-   return config
+    console.log('📤 发起请求:', {
+      url: config.url,
+      method: config.method,
+      baseURL: config.baseURL,
+      timeout: config.timeout,
+      data: config.data ? JSON.stringify(config.data).substring(0, 200) + '...' : undefined
+    })
+    return config
   },
   error => {
-    console.error('请求错误:', error)
-   return Promise.reject(error)
+    console.error('❌ 请求错误:', error)
+    return Promise.reject(error)
   }
 )
 
 // 响应拦截器
 api.interceptors.response.use(
   response => {
-   return response.data
+    console.log('✅ 响应成功:', {
+      url: response.config.url,
+      method: response.config.method,
+      status: response.status,
+      dataSize: JSON.stringify(response.data).length
+    })
+    return response.data
   },
   error => {
-    const errorMsg = error.response?.data?.detail || error.message || '请求失败'
-    ElMessage.error(errorMsg)
-   return Promise.reject(error)
+    console.error('❌ 响应失败:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      errorType: error.code || error.name,
+      errorMessage: error.message,
+      responseData: error.response?.data
+    })
+    
+    // 判断是否是超时错误
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      ElMessage.error('请求超时，处理时间较长，请耐心等待或联系管理员')
+    } else {
+      const errorMsg = error.response?.data?.detail || error.message || '请求失败'
+      ElMessage.error(errorMsg)
+    }
+    return Promise.reject(error)
   }
 )
 

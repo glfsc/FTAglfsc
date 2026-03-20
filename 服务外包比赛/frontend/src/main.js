@@ -40,3 +40,23 @@ const bootstrap = async () => {
 }
 
 bootstrap()
+
+// 全局错误处理器 - 忽略浏览器扩展导致的错误
+window.addEventListener('error', (event) => {
+  // 如果是 content.js 或扩展相关的错误，直接忽略
+  if (
+    event.message?.includes('getRangeAt') ||
+    event.message?.includes('Selection') ||
+    event.message?.includes('IndexSizeError') ||
+    event.filename?.includes('content.js') ||
+    event.filename?.includes('extension') ||
+    event.filename?.includes('chrome-extension://') ||
+    event.filename?.includes('edge-extension://')
+  ) {
+    console.warn('忽略浏览器扩展错误:', event.message)
+    return
+  }
+  
+  // 其他错误正常处理
+  console.error('全局错误:', event)
+})

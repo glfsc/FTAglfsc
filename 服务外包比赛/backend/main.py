@@ -112,7 +112,9 @@ app = FastAPI(
     title="工业设备故障树智能生成系统",
     description="基于知识的故障树智能生成与辅助构建系统",
     version="1.0.0",
-    lifespan=lifespan  # 注入生命周期管理器
+    lifespan=lifespan,  # 注入生命周期管理器
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # ================= CORS 安全配置（升级版） =================
