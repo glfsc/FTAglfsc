@@ -196,9 +196,9 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("故障树智能生成系统 API 服务已启动")
     print("="*60)
-    print("📚 API 文档地址：http://localhost:8000/docs")
-    print("🏥 健康检查：http://localhost:8000/api/health")
-    print("🔧 API 基础路径：/api/v1")
+    print("API docs: http://localhost:8000/docs")
+    print("健康检查：http://localhost:8000/api/health")
+    print("API 基础路径：/api/v1")
     print("="*60 + "\n")
     
     uvicorn.run(
