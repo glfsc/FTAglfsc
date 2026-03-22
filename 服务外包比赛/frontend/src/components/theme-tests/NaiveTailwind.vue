@@ -1,7 +1,7 @@
 <template>
-  <div class="c-root h-full flex flex-col transition-colors duration-[420ms]" :data-theme="theme" @keydown="handleKeydown">
-    <div class="c-bg" :data-theme="theme" aria-hidden="true" />
-    <div v-if="themeTransition.active" class="c-bg c-bg--from" :data-theme="themeTransition.from" aria-hidden="true" />
+  <div ref="rootRef" class="c-root h-full flex flex-col transition-colors duration-[420ms] relative" :data-theme="theme" :data-font-size="fontSizeLevel" @keydown="handleKeydown">
+    <div class="c-bg" :data-theme="theme" aria-hidden="true"></div>
+    <div v-if="themeTransition.active" class="c-bg c-bg--from" :data-theme="themeTransition.from" aria-hidden="true"></div>
 
     <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
       <div
@@ -14,7 +14,10 @@
       </div>
     </div>
 
-    <header class="c-glass h-16 px-6 flex items-center justify-between border-b transition-colors duration-[420ms]">
+    <header 
+      v-if="!isFullscreen"
+      class="c-glass h-16 px-6 flex items-center justify-between border-b transition-colors duration-[420ms]"
+    >
       <div class="flex items-center gap-3">
         <div class="relative">
           <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-violet-600 blur-xl opacity-35"></div>
@@ -34,8 +37,11 @@
       </div>
     </header>
 
-    <div class="flex-1 min-h-0 p-4 flex gap-4">
-      <aside class="c-left-sidebar w-72 c-panel c-glass shadow-2xl overflow-hidden flex flex-col min-h-0 transition-colors duration-[420ms]">
+    <div class="flex-1 min-h-0 flex transition-all duration-[420ms] relative" :class="isFullscreen ? 'p-0 gap-0' : 'p-4 gap-4'">
+      <aside 
+        class="c-left-sidebar c-panel c-glass shadow-2xl overflow-hidden flex flex-col min-h-0 transition-all duration-300 relative"
+        :class="leftSidebarCollapsed ? 'w-0 border-0 opacity-0' : 'w-72'"
+      >
         <div class="px-4 py-3 flex items-center justify-between border-b border-[var(--c-border)] transition-colors duration-[420ms]">
           <div class="text-sm font-semibold transition-colors duration-[420ms]">历史记录</div>
           <button class="text-xs text-[var(--c-text-muted)] hover:text-[var(--c-text)] transition duration-200">清空</button>
@@ -49,10 +55,10 @@
             @click="selectedHistoryId = item.id"
           >
             <div class="flex items-center justify-between gap-2">
-              <div class="text-sm font-medium text-[var(--c-text)] truncate transition-colors duration-[420ms]">{{ item.title }}</div>
-              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-200">{{ item.status }}</span>
+              <div class="text-sm font-medium text-[var(--c-text)] transition-colors duration-[420ms]">{{ item.title }}</div>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-200 whitespace-nowrap">{{ item.status }}</span>
             </div>
-            <div class="mt-2 flex items-center justify-between">
+            <div class="mt-2 flex items-center justify-between flex-wrap gap-2">
               <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">{{ item.time }}</div>
               <button class="text-xs text-rose-200/80 hover:text-rose-200 transition" @click.stop="handleDeleteHistory(item.id)">删除</button>
             </div>
@@ -60,20 +66,105 @@
         </div>
       </aside>
 
-      <main class="flex-1 min-w-0 min-h-0 flex flex-col gap-3">
-        <div class="c-panel c-glass shadow-2xl px-3 py-2 flex items-center justify-between transition-colors duration-[420ms]">
-          <div class="flex items-center gap-2">
+      <!-- Left Sidebar Toggle Button -->
+      <div 
+        class="flex items-center justify-center w-10 h-full cursor-pointer hover:bg-white/5 transition-colors group z-20"
+        @click="toggleLeftSidebar"
+        :title="leftSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+      >
+        <div class="w-4 h-24 rounded-full bg-[var(--c-border)] group-hover:bg-cyan-400/50 transition-colors flex items-center justify-center shadow-lg">
+          <svg 
+            class="w-8 h-8 text-[var(--c-text-muted)] group-hover:text-cyan-400 transition-transform duration-300"
+            :class="leftSidebarCollapsed ? 'rotate-180' : ''"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </div>
+      </div>
+
+      <main class="flex-1 min-w-0 min-h-0 flex flex-col transition-all duration-[420ms] relative" :class="isFullscreen ? 'gap-0' : 'gap-3'">
+        <div 
+          class="c-panel c-glass shadow-2xl px-3 h-14 flex items-center justify-between transition-colors duration-[420ms] z-50"
+          :class="isFullscreen ? 'rounded-none border-x-0 border-t-0' : ''"
+        >
+          <div class="flex items-center gap-2 h-full">
             <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!canUndo" @click="handleUndo">撤销</button>
             <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!canRedo" @click="handleRedo">重做</button>
             <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200" @click="handleAddNode">新增节点</button>
             <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!selectedNodeId && !selectedEdgeId" @click="handleDeleteSelected">删除节点</button>
+            <div class="w-[1px] h-4 bg-[var(--c-border)] mx-1"></div>
+            
+            <!-- Export Button Container - Restored h-full and flex items-center for vertical centering -->
+            <div class="relative export-menu-container h-full flex items-center">
+              <button 
+                class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                @click.stop="showExportMenu = !showExportMenu"
+                :disabled="isExporting"
+              >
+                <svg v-if="!isExporting" class="w-4 h-4 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <svg v-else class="w-4 h-4 animate-spin flex-none" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="whitespace-nowrap">{{ isExporting ? '...' : '导出' }}</span>
+              </button>
+              
+              <!-- Export Dropdown - Positioned relative to the toolbar bottom to ensure "sticker" effect over canvas -->
+              <div 
+                v-if="showExportMenu" 
+                class="absolute top-[calc(100%-6px)] left-1/2 -translate-x-1/2 w-48 c-glass border border-[var(--c-border)] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[9999] overflow-hidden pointer-events-auto"
+                @click.stop
+              >
+                <button @click="exportAsImage" class="w-full px-4 py-3 text-left text-sm text-[var(--c-text)] hover:bg-cyan-500/20 transition-colors flex items-center gap-3">
+                  <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span>导出为图片</span>
+                </button>
+                <button @click="exportAsPDF" class="w-full px-4 py-3 text-left text-sm text-[var(--c-text)] border-t border-[var(--c-border)] hover:bg-violet-500/20 transition-colors flex items-center gap-3">
+                  <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 9h1v2h-1zM9 13h1v2h-1zM12 9h1v2h-1zM12 13h1v2h-1z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span>导出为 PDF</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="w-[1px] h-4 bg-[var(--c-border)] mx-1"></div>
+            <div class="flex items-center gap-1 bg-[var(--c-surface-2)] p-1 c-radius border border-[var(--c-border)]">
+              <button 
+                v-for="lvl in fontSizeLevels"
+                :key="lvl.value"
+                @click="setFontSize(lvl.value)"
+                class="px-2.5 py-1 text-xs rounded-md transition-all duration-200"
+                :class="fontSizeLevel === lvl.value ? 'bg-cyan-500 text-white shadow-lg' : 'text-[var(--c-text-muted)] hover:text-[var(--c-text)] hover:bg-[var(--c-surface-3)]'"
+              >
+                {{ lvl.label }}
+              </button>
+            </div>
+            <div class="w-[1px] h-4 bg-[var(--c-border)] mx-1"></div>
+            <button 
+              class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 flex items-center gap-1.5" 
+              @click="toggleFullscreen"
+              :title="isFullscreen ? '退出全屏' : '沉浸式模式'"
+            >
+              <svg v-if="!isFullscreen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+              <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>{{ isFullscreen ? '退出沉浸' : '沉浸模式' }}</span>
+            </button>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">Ctrl+Z/Ctrl+Y · Tab/方向键/Del</span>
           </div>
         </div>
 
-        <div class="flex-1 min-h-0 c-panel c-glass shadow-2xl overflow-hidden transition-colors duration-[420ms]">
+        <div 
+          class="flex-1 min-h-0 c-panel c-glass shadow-2xl overflow-hidden transition-all duration-[420ms]"
+          :class="isFullscreen ? 'rounded-none border-0 shadow-none' : ''"
+        >
           <div
             ref="canvasRef"
             class="relative h-full w-full outline-none"
@@ -87,10 +178,10 @@
             <svg class="absolute inset-0" :width="canvasSize.width" :height="canvasSize.height">
               <defs>
                 <filter id="c-edge-glow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
                   <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
+                    <feMergeNode in="blur"></feMergeNode>
+                    <feMergeNode in="SourceGraphic"></feMergeNode>
                   </feMerge>
                 </filter>
               </defs>
@@ -150,179 +241,230 @@
               />
             </svg>
 
-            <ParticleBurst ref="particleRef" class="absolute inset-0 z-30 pointer-events-none" :enabled="particleEnabled" :gravity-decay="0.98" :life-ms="800" :count="20" />
+            <ParticleBurst ref="particleRef" class="absolute inset-0 z-30 pointer-events-none" :enabled="particleEnabled" :gravity-decay="0.98" :life-ms="800" :count="20"></ParticleBurst>
 
-              <div
-                v-for="node in nodes"
-                :key="node.id"
-                class="c-node absolute z-10 w-[220px] h-[92px] border shadow-xl select-none cursor-grab active:cursor-grabbing p-3 transition duration-200"
-                :class="[
-                  node.id === selectedNodeId ? 'is-selected' : '',
-                  node.type === 'top' ? 'border-rose-400/30 bg-rose-500/10' : '',
-                  node.type === 'middle' ? 'border-sky-400/30 bg-sky-500/10' : '',
-                  node.type === 'basic' ? 'border-emerald-400/30 bg-emerald-500/10' : ''
-                ]"
-                :style="{ left: node.x + 'px', top: node.y + 'px' }"
-                @mousedown="handleNodeMouseDown(node, $event)"
-                @click.stop="handleSelectNode(node.id, { focus: true })"
-                @focus="handleSelectNode(node.id, { effects: false })"
-                @keydown.enter.prevent="handleSelectNode(node.id, { focus: true })"
-                @keydown.space.prevent="handleSelectNode(node.id, { focus: true })"
-                :data-node-id="node.id"
-                tabindex="0"
-                role="button"
-                :aria-label="`节点 ${node.label}（${node.id}），按 Enter 选中，按 Shift+方向键移动`"
-              >
-                <span class="c-node-glow-inner" v-if="node.id === selectedNodeId" :key="`g1-${nodeEffectKey}`" />
-                <span class="c-node-glow-outer" v-if="node.id === selectedNodeId" :key="`g2-${nodeEffectKey}`" />
-                <span class="c-node-pulse" v-if="node.id === selectedNodeId" :key="`p-${nodeEffectKey}`" />
-                <!-- Hover glow effect -->
-                <span class="c-node-hover-glow" v-if="node.id !== selectedNodeId" />
-                <div class="flex items-center justify-between text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">
-                  <div class="font-semibold text-[var(--c-text)]/90 transition-colors duration-[420ms]">{{ nodeTypeText(node.type) }}</div>
-                  <div class="px-2 py-0.5 rounded-full bg-[var(--c-surface-2)]/70 border border-[var(--c-border)] font-semibold text-[var(--c-text)]/85 transition-colors duration-[420ms]">{{ node.gate }}</div>
-                </div>
-                <div class="mt-1 text-sm font-semibold text-[var(--c-text)] truncate transition-colors duration-[420ms]">{{ node.label }}</div>
-                <div class="mt-1 text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">ID：{{ node.id }}</div>
-            
-                <button
-                  class="c-handle absolute left-1/2 -translate-x-1/2 -bottom-3 w-5 h-5 rounded-full border border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/30 transition cursor-crosshair"
-                  title="拖拽创建连线"
-                  aria-label="从该节点拖拽创建连线"
-                  :data-node-id="node.id"
-                  data-handle="out"
-                  @mousedown.stop="handleStartConnect(node.id, $event)"
-                />
-                <button
-                  class="c-handle absolute left-1/2 -translate-x-1/2 -top-3 w-5 h-5 rounded-full border border-violet-300/40 bg-violet-400/15 hover:bg-violet-400/25 transition cursor-crosshair"
-                  title="将连线拖到此处完成连接"
-                  aria-label="将连线拖到该节点上方圆点完成连接"
-                  :data-node-id="node.id"
-                  data-handle="in"
-                />
+            <div
+              v-for="node in nodes"
+              :key="node.id"
+              class="c-node absolute z-10 border shadow-xl select-none cursor-grab active:cursor-grabbing p-4 transition duration-200 flex flex-col justify-center"
+              :class="[
+                node.id === selectedNodeId ? 'is-selected' : '',
+                node.type === 'top' ? 'border-rose-400/30 bg-rose-500/10' : '',
+                node.type === 'middle' ? 'border-sky-400/30 bg-sky-500/10' : '',
+                node.type === 'basic' ? 'border-emerald-400/30 bg-emerald-500/10' : ''
+              ]"
+              :style="{ left: node.x + 'px', top: node.y + 'px' }"
+              @mousedown="handleNodeMouseDown(node, $event)"
+              @click.stop="handleSelectNode(node.id, { focus: true })"
+              @focus="handleSelectNode(node.id, { effects: false })"
+              @keydown.enter.prevent="handleSelectNode(node.id, { focus: true })"
+              @keydown.space.prevent="handleSelectNode(node.id, { focus: true })"
+              :data-node-id="node.id"
+              tabindex="0"
+              role="button"
+              :aria-label="`节点 ${node.label}（${node.id}），按 Enter 选中，按 Shift+方向键移动`"
+            >
+              <span class="c-node-glow-inner" v-if="node.id === selectedNodeId" :key="'g1-' + nodeEffectKey"></span>
+              <span class="c-node-glow-outer" v-if="node.id === selectedNodeId" :key="'g2-' + nodeEffectKey"></span>
+              <span class="c-node-pulse" v-if="node.id === selectedNodeId" :key="'p-' + nodeEffectKey"></span>
+              <!-- Hover glow effect -->
+              <span class="c-node-hover-glow" v-if="node.id !== selectedNodeId"></span>
+              <div class="flex items-center justify-between text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms] gap-2">
+                <div class="font-semibold text-[var(--c-text)]/90 transition-colors duration-[420ms] whitespace-nowrap">{{ nodeTypeText(node.type) }}</div>
+                <div class="px-2 py-0.5 rounded-full bg-[var(--c-surface-2)]/70 border border-[var(--c-border)] font-semibold text-[var(--c-text)]/85 transition-colors duration-[420ms] whitespace-nowrap">{{ node.gate }}</div>
               </div>
+              <div class="mt-2 text-sm font-semibold text-[var(--c-text)] transition-colors duration-[420ms] leading-snug">{{ node.label }}</div>
+              <div class="mt-1 text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms] whitespace-nowrap">ID：{{ node.id }}</div>
+          
+              <div
+                class="c-handle absolute left-1/2 -translate-x-1/2 -bottom-4 w-8 h-8 rounded-full border-2 border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/40 cursor-crosshair flex items-center justify-center z-20"
+                title="点击创建连线"
+                role="button"
+                :data-node-id="node.id"
+                data-handle="out"
+                @mousedown.stop
+                @click.stop="handleStartConnect(node.id, $event)"
+              >
+                <div class="w-3 h-3 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></div>
+              </div>
+              <div
+                class="c-handle absolute left-1/2 -translate-x-1/2 -top-4 w-8 h-8 rounded-full border-2 border-violet-300/40 bg-violet-400/15 hover:bg-violet-400/30 cursor-crosshair flex items-center justify-center z-20"
+                title="点击此处或节点完成连接"
+                role="button"
+                :data-node-id="node.id"
+                data-handle="in"
+                @mousedown.stop
+              >
+                <div class="w-3 h-3 rounded-full bg-violet-300/60"></div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
 
-      <aside class="w-[450px] c-panel c-glass shadow-2xl overflow-hidden flex flex-col min-h-0 transition-colors duration-[420ms]">
-        <div class="px-4 py-3 flex items-center justify-between border-b border-[var(--c-border)] transition-colors duration-[420ms]">
-          <div class="text-sm font-semibold text-[var(--c-text)] transition-colors duration-[420ms]">{{ selectedEdgeId ? '连线信息' : selectedNodeId ? '节点信息' : '专家辅助系统' }}</div>
-          <button class="text-xs text-[var(--c-text-muted)] hover:text-[var(--c-text)] transition duration-200 disabled:opacity-40" :disabled="!selectedNodeId && !selectedEdgeId" @click="clearSelection">关闭</button>
+      <!-- Right Sidebar Overlay Container -->
+      <div 
+        class="fixed right-0 top-0 bottom-0 flex z-[100]"
+        :class="[
+          isFullscreen ? 'h-screen' : 'h-full !absolute',
+          isResizingRight ? 'transition-none pointer-events-auto' : 'transition-all duration-[420ms]'
+        ]"
+      >
+        <!-- Right Sidebar Toggle Button (similar to left) -->
+        <div 
+          class="flex items-center justify-center w-10 h-full cursor-pointer hover:bg-white/5 transition-colors group z-20"
+          @click="toggleRightSidebar"
+          :title="rightSidebarCollapsed ? '展开右侧栏' : '收起右侧栏'"
+        >
+          <div class="w-4 h-24 rounded-full bg-[var(--c-border)] group-hover:bg-cyan-400/50 transition-colors flex items-center justify-center shadow-lg">
+            <svg 
+              class="w-8 h-8 text-[var(--c-text-muted)] group-hover:text-cyan-400 transition-transform duration-300"
+              :class="rightSidebarCollapsed ? '' : 'rotate-180'"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </div>
         </div>
 
-        <!-- AI Chat Panel - Default when no node/edge selected -->
-        <div v-if="!selectedNodeId && !selectedEdgeId" class="flex-1 flex flex-col">
-          <div class="flex-1 p-4 overflow-auto">
-            <!-- Expert System Header with Glow Effect -->
-            <div class="relative mb-4 p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-400/20">
-              <div class="absolute inset-0 bg-gradient-to-r from-emerald-400/5 to-teal-400/5 animate-pulse rounded-xl"></div>
-              <div class="relative flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                <h3 class="font-bold text-[var(--c-text)]">专家辅助系统 - Expert Assistant</h3>
-              </div>
-            </div>
-            
-            <!-- AI Chat Messages Area -->
-            <div class="space-y-4">
-              <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-emerald-300">
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
+        <!-- Resizer Handle - Only visible when not collapsed -->
+        <div 
+          v-if="!rightSidebarCollapsed"
+          class="w-2 h-full cursor-col-resize hover:bg-cyan-400/40 transition-colors flex items-center justify-center group bg-black/5 backdrop-blur-sm border-l border-[var(--c-border)] select-none"
+          @mousedown="startResizingRight"
+        >
+          <div class="w-1 h-24 rounded-full bg-[var(--c-border)] group-hover:bg-cyan-400/60 transition-colors shadow-sm"></div>
+        </div>
+
+        <aside 
+          class="c-panel c-glass shadow-2xl overflow-hidden flex flex-col min-h-0 border-l border-[var(--c-border)] rounded-none"
+          :class="[
+            isResizingRight ? 'transition-none' : 'transition-all duration-300',
+            rightSidebarCollapsed ? 'w-0 border-0 opacity-0 invisible' : ''
+          ]"
+          :style="{ width: rightSidebarCollapsed ? '0px' : rightSidebarWidth + 'px' }"
+        >
+          <div class="px-4 py-3 flex items-center justify-between border-b border-[var(--c-border)] transition-colors duration-[420ms]">
+            <div class="text-sm font-semibold text-[var(--c-text)] transition-colors duration-[420ms]">{{ selectedEdgeId ? '连线信息' : selectedNodeId ? '节点信息' : '专家辅助系统' }}</div>
+            <button class="text-xs text-[var(--c-text-muted)] hover:text-[var(--c-text)] transition duration-200 disabled:opacity-40" :disabled="!selectedNodeId && !selectedEdgeId" @click="clearSelection">关闭</button>
+          </div>
+
+          <!-- AI Chat Panel - Default when no node/edge selected -->
+          <div v-if="!selectedNodeId && !selectedEdgeId" class="flex-1 flex flex-col min-h-0">
+            <div class="flex-1 p-4 overflow-auto">
+              <!-- Expert System Header with Glow Effect -->
+              <div class="relative mb-4 p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-400/20">
+                <div class="absolute inset-0 bg-gradient-to-r from-emerald-400/5 to-teal-400/5 animate-pulse rounded-xl"></div>
+                <div class="relative flex items-center gap-3">
+                  <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <h3 class="font-bold text-[var(--c-text)]">专家辅助系统 - Expert Assistant</h3>
                 </div>
-                <div class="flex-1">
-                  <div class="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-[var(--c-text)]">
-                    您好！我是专家辅助系统，可以帮您分析故障树结构、评估概率、优化逻辑门配置等。请问有什么可以帮助您的？
+              </div>
+              
+              <!-- AI Chat Messages Area -->
+              <div class="space-y-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-emerald-300">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3.005 0 013.75-2.906z"></path></svg>
+                  </div>
+                  <div class="flex-1">
+                    <div class="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-[var(--c-text)]">
+                      您好！我是专家辅助系统，可以帮您分析故障树结构、评估概率、优化逻辑门配置等。请问有什么可以帮助您的？
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Input Area -->
-          <div class="p-4 border-t border-[var(--c-border)]">
-            <div class="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="向 AI 专家提问..." 
-                class="flex-1 px-4 py-2.5 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition-colors duration-[420ms]"
-              />
-              <button class="px-4 py-2.5 c-radius bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 hover:bg-emerald-500/30 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-              </button>
+            
+            <!-- Input Area -->
+            <div class="p-4 border-t border-[var(--c-border)]">
+              <div class="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="向 AI 专家提问..." 
+                  class="flex-1 px-4 py-2.5 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition-colors duration-[420ms]"
+                />
+                <button class="px-4 py-2.5 c-radius bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 hover:bg-emerald-500/30 transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Edge Properties Panel - Shows when edge selected -->
-        <div v-else-if="selectedEdgeId" class="p-4 overflow-auto space-y-3 relative">
-          <!-- Edge Highlight Indicator -->
-          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 to-violet-400 animate-pulse"></div>
-          
-          <div class="grid grid-cols-2 gap-3">
+          <!-- Edge Properties Panel - Shows when edge selected -->
+          <div v-else-if="selectedEdgeId" class="p-4 overflow-auto space-y-3 relative">
+            <!-- Edge Highlight Indicator -->
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 to-violet-400 animate-pulse"></div>
+            
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">颜色</div>
+                <input v-model="edgeForm.color" type="color" class="w-full h-10 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)]" @change="commitEdgeForm" />
+              </div>
+              <div class="space-y-1.5">
+                <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">粗细</div>
+                <input v-model.number="edgeForm.width" type="number" min="1" max="12" step="1" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitEdgeForm" />
+              </div>
+            </div>
+            <button class="w-full px-3 py-2 c-radius bg-rose-500/15 border border-rose-400/30 text-rose-200 hover:bg-rose-500/25 transition" @click="handleDeleteSelected">删除连线</button>
+            <div class="text-xs text-[var(--c-text-muted)] text-center mt-2">或按 Delete 键删除</div>
+          </div>
+
+          <!-- Node Properties Panel - Shows when node selected -->
+          <div v-else-if="selectedNodeId" class="p-4 overflow-auto space-y-3 relative">
+            <!-- Node Highlight Effect -->
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 to-purple-400 animate-pulse"></div>
+            <div class="mb-4 p-3 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg border border-indigo-400/20">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                <span class="text-sm font-semibold text-[var(--c-text)]">Selected: {{ nodeForm.label }}</span>
+              </div>
+            </div>
+            
             <div class="space-y-1.5">
-              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">颜色</div>
-              <input v-model="edgeForm.color" type="color" class="w-full h-10 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)]" @change="commitEdgeForm" />
+              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">节点名称</div>
+              <input v-model="nodeForm.label" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @blur="commitNodeForm" />
             </div>
             <div class="space-y-1.5">
-              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">粗细</div>
-              <input v-model.number="edgeForm.width" type="number" min="1" max="12" step="1" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitEdgeForm" />
+              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">节点 ID</div>
+              <input v-model="nodeForm.id" disabled class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text-muted)] transition-colors duration-[420ms]" />
             </div>
+            <div class="space-y-1.5">
+              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">事件类型</div>
+              <select v-model="nodeForm.type" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitNodeForm">
+                <option value="top" style="background: #ffffff; color: #0f172a;">顶事件</option>
+                <option value="middle" style="background: #ffffff; color: #0f172a;">中间事件</option>
+                <option value="basic" style="background: #ffffff; color: #0f172a;">基本事件</option>
+              </select>
+            </div>
+            <div class="space-y-1.5">
+              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">逻辑门</div>
+              <div class="flex gap-2">
+                <button class="flex-1 px-3 py-2 c-radius border transition duration-200" :class="nodeForm.gate === 'AND' ? 'bg-cyan-400/15 border-cyan-400/30 text-cyan-200' : 'bg-[var(--c-surface-2)] border-[var(--c-border)] text-[var(--c-text-muted)] hover:bg-[var(--c-surface-3)]'" @click="nodeForm.gate = 'AND'; commitNodeForm()">
+                  AND
+                </button>
+                <button class="flex-1 px-3 py-2 c-radius border transition duration-200" :class="nodeForm.gate === 'OR' ? 'bg-cyan-400/15 border-cyan-400/30 text-cyan-200' : 'bg-[var(--c-surface-2)] border-[var(--c-border)] text-[var(--c-text-muted)] hover:bg-[var(--c-surface-3)]'" @click="nodeForm.gate = 'OR'; commitNodeForm()">
+                  OR
+                </button>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">概率</div>
+              <input v-model.number="nodeForm.probability" type="number" step="0.001" min="0" max="1" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitNodeForm" />
+            </div>
+            <button class="w-full px-3 py-2 c-radius bg-rose-500/15 border border-rose-400/30 text-rose-200 hover:bg-rose-500/25 transition" @click="handleDeleteSelected">删除节点</button>
+            <div class="text-xs text-[var(--c-text-muted)] text-center mt-2">或按 Delete 键删除</div>
           </div>
-          <button class="w-full px-3 py-2 c-radius bg-rose-500/15 border border-rose-400/30 text-rose-200 hover:bg-rose-500/25 transition" @click="handleDeleteSelected">删除连线</button>
-          <div class="text-xs text-[var(--c-text-muted)] text-center mt-2">或按 Delete 键删除</div>
-        </div>
 
-        <!-- Node Properties Panel - Shows when node selected -->
-        <div v-else-if="selectedNodeId" class="p-4 overflow-auto space-y-3 relative">
-          <!-- Node Highlight Effect -->
-          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 to-purple-400 animate-pulse"></div>
-          <div class="mb-4 p-3 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg border border-indigo-400/20">
-            <div class="flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-              <span class="text-sm font-semibold text-[var(--c-text)]">Selected: {{ nodeForm.label }}</span>
-            </div>
-          </div>
-          
-          <div class="space-y-1.5">
-            <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">节点名称</div>
-            <input v-model="nodeForm.label" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @blur="commitNodeForm" />
-          </div>
-          <div class="space-y-1.5">
-            <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">节点 ID</div>
-            <input v-model="nodeForm.id" disabled class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text-muted)] transition-colors duration-[420ms]" />
-          </div>
-          <div class="space-y-1.5">
-            <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">事件类型</div>
-            <select v-model="nodeForm.type" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitNodeForm">
-              <option value="top" style="background: #ffffff; color: #0f172a;">顶事件</option>
-              <option value="middle" style="background: #ffffff; color: #0f172a;">中间事件</option>
-              <option value="basic" style="background: #ffffff; color: #0f172a;">基本事件</option>
-            </select>
-          </div>
-          <div class="space-y-1.5">
-            <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">逻辑门</div>
-            <div class="flex gap-2">
-              <button class="flex-1 px-3 py-2 c-radius border transition duration-200" :class="nodeForm.gate === 'AND' ? 'bg-cyan-400/15 border-cyan-400/30 text-cyan-200' : 'bg-[var(--c-surface-2)] border-[var(--c-border)] text-[var(--c-text-muted)] hover:bg-[var(--c-surface-3)]'" @click="nodeForm.gate = 'AND'; commitNodeForm()">
-                AND
-              </button>
-              <button class="flex-1 px-3 py-2 c-radius border transition duration-200" :class="nodeForm.gate === 'OR' ? 'bg-cyan-400/15 border-cyan-400/30 text-cyan-200' : 'bg-[var(--c-surface-2)] border-[var(--c-border)] text-[var(--c-text-muted)] hover:bg-[var(--c-surface-3)]'" @click="nodeForm.gate = 'OR'; commitNodeForm()">
-                OR
-              </button>
-            </div>
-          </div>
-          <div class="space-y-1.5">
-            <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">概率</div>
-            <input v-model.number="nodeForm.probability" type="number" step="0.001" min="0" max="1" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitNodeForm" />
-          </div>
-          <button class="w-full px-3 py-2 c-radius bg-rose-500/15 border border-rose-400/30 text-rose-200 hover:bg-rose-500/25 transition" @click="handleDeleteSelected">删除节点</button>
-          <div class="text-xs text-[var(--c-text-muted)] text-center mt-2">或按 Delete 键删除</div>
-        </div>
-
-        <div v-else class="p-4 text-sm text-[var(--c-text-muted)] transition-colors duration-[420ms]">选择画布中的节点或连线以编辑属性</div>
-      </aside>
+          <div v-else class="p-4 text-sm text-[var(--c-text-muted)] transition-colors duration-[420ms]">选择画布中的节点或连线以编辑属性</div>
+        </aside>
+      </div>
     </div>
 
-    <footer class="c-glass p-4 border-t border-[var(--c-border)] transition-colors duration-[420ms]">
+    <footer 
+      v-if="!isFullscreen"
+      class="c-glass p-4 border-t border-[var(--c-border)] transition-colors duration-[420ms]"
+    >
       <div class="flex items-start gap-3">
         <textarea v-model="inputText" rows="3" class="flex-1 min-w-0 px-4 py-3 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" placeholder="上传文本 → 抽取 → 生成 → 人工调整 → 导出"></textarea>
         <label class="px-3.5 py-2 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 cursor-pointer">
@@ -337,6 +479,8 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import * as htmlToImage from 'html-to-image'
+import { jsPDF } from 'jspdf'
 import ParticleBurst from './ParticleBurst.vue'
 import { HistoryManager, canAddEdge, createIncrementId, defaultClone, deleteEdge, deleteNodeAndRelatedEdges, normalizeEdgeStyle, pointsToPolylinePath, resolveDragCollision, snapToGrid } from './naiveTailwindCore'
 
@@ -345,6 +489,35 @@ const props = defineProps({
   initialAllowMultipleEdges: { type: Boolean, default: false },
   initialParticleEnabled: { type: Boolean, default: true }
 })
+
+const fontSizeLevel = ref('sm') // 'xs', 'sm', 'lg', 'xl'
+const fontSizeLevels = [
+  { label: '小', value: 'xs' },
+  { label: '中', value: 'sm' },
+  { label: '大', value: 'lg' },
+  { label: '超大', value: 'xl' }
+]
+
+const nodeWidth = computed(() => {
+  if (fontSizeLevel.value === 'xs') return 190
+  if (fontSizeLevel.value === 'sm') return 220
+  if (fontSizeLevel.value === 'lg') return 280
+  if (fontSizeLevel.value === 'xl') return 380
+  return 220
+})
+
+const nodeHeight = computed(() => {
+  if (fontSizeLevel.value === 'xs') return 80
+  if (fontSizeLevel.value === 'sm') return 92
+  if (fontSizeLevel.value === 'lg') return 120
+  if (fontSizeLevel.value === 'xl') return 180
+  return 92
+})
+
+const setFontSize = (level) => {
+  fontSizeLevel.value = level
+  toast(`已切换字号：${fontSizeLevels.find(l => l.value === level).label}`, 'info')
+}
 
 const histories = ref([
   { id: 'h-1', title: '空压机无法启动', time: '2026/03/16 09:12', status: 'done' },
@@ -364,6 +537,125 @@ const allowMultipleEdges = ref(false) // Default: single edge mode
 const particleEnabled = ref(true) // Default: enabled
 const particleRef = ref(null)
 
+const rootRef = ref(null)
+const isFullscreen = ref(false)
+const savedTheme = ref('dark')
+
+const leftSidebarCollapsed = ref(false)
+const rightSidebarCollapsed = ref(false)
+const rightSidebarWidth = ref(450)
+const isResizingRight = ref(false)
+
+const toggleLeftSidebar = () => {
+  leftSidebarCollapsed.value = !leftSidebarCollapsed.value
+}
+
+const toggleRightSidebar = () => {
+  rightSidebarCollapsed.value = !rightSidebarCollapsed.value
+}
+
+const startResizingRight = (e) => {
+  isResizingRight.value = true
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+  window.addEventListener('mousemove', handleResizingRight)
+  window.addEventListener('mouseup', stopResizingRight)
+}
+
+const handleResizingRight = (e) => {
+  if (!isResizingRight.value) return
+  // Calculate width relative to the right edge of the window for stability
+  const newWidth = window.innerWidth - e.clientX
+  // Limit the width from 200px to almost full screen width
+  const maxWidth = window.innerWidth - 48
+  if (newWidth > 200 && newWidth < maxWidth) {
+    rightSidebarWidth.value = newWidth
+  }
+}
+
+const stopResizingRight = () => {
+  isResizingRight.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  window.removeEventListener('mousemove', handleResizingRight)
+  window.removeEventListener('mouseup', stopResizingRight)
+}
+
+const isExporting = ref(false)
+const showExportMenu = ref(false)
+
+const exportAsImage = async () => {
+  if (!canvasRef.value) return
+  isExporting.value = true
+  showExportMenu.value = false
+  try {
+    const dataUrl = await htmlToImage.toPng(canvasRef.value, {
+      backgroundColor: theme.value === 'dark' ? '#020617' : '#f6f7fb',
+      pixelRatio: 2, // High quality
+    })
+    const link = document.createElement('a')
+    link.download = `故障树-${new Date().getTime()}.png`
+    link.href = dataUrl
+    link.click()
+    toast('图片导出成功', 'success')
+  } catch (err) {
+    console.error('Export error:', err)
+    toast('图片导出失败', 'error')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const exportAsPDF = async () => {
+  if (!canvasRef.value) return
+  isExporting.value = true
+  showExportMenu.value = false
+  try {
+    const dataUrl = await htmlToImage.toPng(canvasRef.value, {
+      backgroundColor: theme.value === 'dark' ? '#020617' : '#f6f7fb',
+      pixelRatio: 2,
+    })
+    
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'px',
+      format: [canvasSize.value.width, canvasSize.value.height]
+    })
+    
+    pdf.addImage(dataUrl, 'PNG', 0, 0, canvasSize.value.width, canvasSize.value.height)
+    pdf.save(`故障树-${new Date().getTime()}.pdf`)
+    toast('PDF 导出成功', 'success')
+  } catch (err) {
+    console.error('PDF Export error:', err)
+    toast('PDF 导出失败', 'error')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    if (rootRef.value) {
+      savedTheme.value = theme.value
+      theme.value = 'dark' // Force dark theme for immersive mode
+      rootRef.value.requestFullscreen().catch(err => {
+        toast(`无法进入全屏模式: ${err.message}`, 'error')
+      })
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    }
+  }
+}
+
+const handleFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
+  if (!isFullscreen.value) {
+    theme.value = savedTheme.value // Restore original theme
+  }
+}
+
 const toasts = ref([])
 const toast = (message, type = 'info') => {
   const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -376,8 +668,6 @@ const toast = (message, type = 'info') => {
 const canvasRef = ref(null)
 const canvasSize = ref({ width: 1, height: 1 })
 
-const nodeWidth = 220
-const nodeHeight = 92
 const safePadding = 8
 const gridStep = 18
 
@@ -495,9 +785,11 @@ const nodeTypeText = (type) => {
 const getNodeAnchor = (nodeId) => {
   const node = nodes.value.find((n) => n.id === nodeId)
   if (!node) return { in: { x: 0, y: 0 }, out: { x: 0, y: 0 } }
+  const nw = nodeWidth.value
+  const nh = nodeHeight.value
   return {
-    in: { x: node.x + nodeWidth / 2, y: node.y },
-    out: { x: node.x + nodeWidth / 2, y: node.y + nodeHeight }
+    in: { x: node.x + nw / 2, y: node.y },
+    out: { x: node.x + nw / 2, y: node.y + nh }
   }
 }
 
@@ -507,6 +799,12 @@ const updateCanvasSize = () => {
 }
 
 const canvasResizeObserver = ref(null)
+
+const handleGlobalClick = (event) => {
+  if (showExportMenu.value && !event.target.closest('.export-menu-container')) {
+    showExportMenu.value = false
+  }
+}
 
 onMounted(() => {
   updateCanvasSize()
@@ -522,6 +820,8 @@ onMounted(() => {
   canvasResizeObserver.value = ro ?? null
   window.addEventListener('resize', updateCanvasSize)
   window.addEventListener('keydown', handleGlobalKeydown, true)
+  window.addEventListener('click', handleGlobalClick)
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
 
 onBeforeUnmount(() => {
@@ -529,6 +829,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('mousemove', handleDragging)
   window.removeEventListener('mouseup', stopDragging)
   window.removeEventListener('keydown', handleGlobalKeydown, true)
+  window.removeEventListener('click', handleGlobalClick)
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
   canvasResizeObserver.value?.disconnect?.()
 })
 
@@ -591,8 +893,10 @@ const handleDragging = (event) => {
   const nextY = event.clientY - rect.top - dragging.value.offsetY
   const minX = 12
   const minY = 12
-  const maxX = rect.width - nodeWidth - 12
-  const maxY = rect.height - nodeHeight - 12
+  const nw = nodeWidth.value
+  const nh = nodeHeight.value
+  const maxX = rect.width - nw - 12
+  const maxY = rect.height - nh - 12
   const proposed = { x: Math.max(minX, Math.min(nextX, maxX)), y: Math.max(minY, Math.min(nextY, maxY)) }
 
   if (!autoAlign.value) {
@@ -605,8 +909,8 @@ const handleDragging = (event) => {
     movingId: node.id,
     proposed,
     nodes: nodes.value,
-    nodeWidth,
-    nodeHeight,
+    nodeWidth: nw,
+    nodeHeight: nh,
     safePadding,
     gridStep,
     bounds: { minX, minY, maxX, maxY }
@@ -648,27 +952,33 @@ const deleteEdgeById = (id) => {
 }
 
 const deleteNodeById = (id) => {
-  const res = deleteNodeAndRelatedEdges(nodes.value, edges.value, id)
-  nodes.value = res.nodes
-  edges.value = res.edges
+  if (!id) return
+  const nextNodes = nodes.value.filter(n => n.id !== id)
+  const nextEdges = edges.value.filter(e => e.source !== id && e.target !== id)
+  nodes.value = nextNodes
+  edges.value = nextEdges
 }
 
 const addNode = () => {
   const id = nextNodeId()
   const rect = canvasRef.value?.getBoundingClientRect?.()
-  const bounds = rect ? { minX: 12, minY: 12, maxX: rect.width - nodeWidth - 12, maxY: rect.height - nodeHeight - 12 } : { minX: 12, minY: 12, maxX: 1200, maxY: 900 }
+  const nw = nodeWidth.value
+  const nh = nodeHeight.value
+  const bounds = rect ? { minX: 12, minY: 12, maxX: rect.width - nw - 12, maxY: rect.height - nh - 12 } : { minX: 12, minY: 12, maxX: 1200, maxY: 900 }
   const baseX = 80 + (nodes.value.length % 5) * 120
   const baseY = 420
   const proposed = { x: snapToGrid(baseX, gridStep), y: snapToGrid(baseY, gridStep) }
-  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth, nodeHeight, safePadding, gridStep, bounds }) : proposed
+  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth: nw, nodeHeight: nh, safePadding, gridStep, bounds }) : proposed
   const node = { id, label: `新节点 ${id.slice(2)}`, type: 'basic', gate: 'OR', probability: 0.001, x: pos.x, y: pos.y }
 
   exec({
-    do: () => nodes.value.push(node),
+    do: () => {
+      nodes.value = [...nodes.value, node]
+      toast(`已添加节点: ${node.label}`)
+    },
     undo: () => {
       deleteNodeById(id)
       if (selectedNodeId.value === id) selectedNodeId.value = ''
-      if (selectedEdgeId.value) selectedEdgeId.value = ''
     }
   })
   handleSelectNode(id)
@@ -677,43 +987,80 @@ const addNode = () => {
 
 const handleAddNode = () => addNode()
 
-const handleDeleteSelected = () => {
-  if (selectedEdgeId.value) {
-    const deleteEdgeId = selectedEdgeId.value
-    const edgeSnapshot = defaultClone(edges.value.find((e) => e.id === deleteEdgeId))
-    if (!edgeSnapshot) return
-    // Clear selection first to avoid any reactivity race
-    selectedEdgeId.value = ''
-    exec({
-      do: () => {
-        deleteEdgeById(deleteEdgeId)
-      },
-      undo: () => {
-        edges.value = [...edges.value, edgeSnapshot]
-        selectedEdgeId.value = deleteEdgeId
-      }
-    })
-    return
+const handleDeleteSelected = (event) => {
+  // Prevent any other click handlers from firing
+  if (event && event.stopPropagation) event.stopPropagation();
+  
+  const targetNodeId = selectedNodeId.value;
+  const targetEdgeId = selectedEdgeId.value;
+
+  // Immediate visual feedback that the click was registered
+  if (!targetNodeId && !targetEdgeId) {
+    toast('请先点击选中一个节点或一条线', 'info');
+    return;
   }
 
-  if (!selectedNodeId.value) return
-  const deleteNodeId = selectedNodeId.value
-  const nodeSnapshot = defaultClone(nodes.value.find((n) => n.id === deleteNodeId))
-  if (!nodeSnapshot) return
-  const edgeSnapshots = defaultClone(edges.value.filter((e) => e.source === deleteNodeId || e.target === deleteNodeId))
-  // Clear selection first to avoid any reactivity race
-  selectedNodeId.value = ''
-  selectedEdgeId.value = ''
-  exec({
-    do: () => {
-      deleteNodeById(deleteNodeId)
-    },
-    undo: () => {
-      nodes.value = [...nodes.value, nodeSnapshot]
-      edges.value = [...edges.value, ...edgeSnapshots]
-      selectedNodeId.value = deleteNodeId
-    }
-  })
+  try {
+     // Handle Edge Deletion
+     if (targetEdgeId) {
+       const edge = edges.value.find(e => e.id === targetEdgeId);
+       if (!edge) {
+         selectedEdgeId.value = '';
+         return;
+       }
+       // Manual shallow clone to avoid structuredClone issues
+       const edgeSnapshot = { ...edge, style: { ...edge.style } };
+       
+       selectedEdgeId.value = '';
+       exec({
+         do: () => {
+           edges.value = edges.value.filter(e => e.id !== targetEdgeId);
+           toast('连线已成功删除');
+         },
+         undo: () => {
+           edges.value = [...edges.value, edgeSnapshot];
+           selectedEdgeId.value = targetEdgeId;
+         }
+       });
+       return;
+     }
+
+     // Handle Node Deletion
+     if (targetNodeId) {
+       const node = nodes.value.find(n => n.id === targetNodeId);
+       if (!node) {
+         toast('选中的节点不存在', 'error');
+         selectedNodeId.value = '';
+         return;
+       }
+       
+       // Manual shallow clone for the node
+       const nodeSnapshot = { ...node };
+       const relatedEdges = edges.value.filter(e => e.source === targetNodeId || e.target === targetNodeId);
+       // Manual shallow clone for related edges
+       const edgeSnapshots = relatedEdges.map(e => ({ ...e, style: { ...e.style } }));
+       const nodeLabel = node.label;
+       
+       selectedNodeId.value = '';
+       selectedEdgeId.value = '';
+       
+       exec({
+         do: () => {
+           nodes.value = nodes.value.filter(n => n.id !== targetNodeId);
+           edges.value = edges.value.filter(e => e.source !== targetNodeId && e.target !== targetNodeId);
+           toast(`节点 "${nodeLabel}" 及其连线已删除`);
+         },
+         undo: () => {
+           nodes.value = [...nodes.value, nodeSnapshot];
+           edges.value = [...edges.value, ...edgeSnapshots];
+           selectedNodeId.value = targetNodeId;
+         }
+       });
+     }
+   } catch (err) {
+     console.error('Deletion error:', err);
+     toast('操作失败: ' + err.message, 'error');
+   }
 }
 
 const handleDeleteHistory = (id) => {
@@ -782,6 +1129,38 @@ const focusNode = async (id) => {
 }
 
 const handleSelectNode = (id, { effects = true, focus = false } = {}) => {
+  // If we are currently dragging a connection line, finish it when clicking a node
+  if (connectDrag.value) {
+    const fromId = connectDrag.value.fromId;
+    const targetId = id;
+    
+    if (fromId !== targetId) {
+      // Reuse logic from handleCanvasMouseUp
+      const fromNode = nodes.value.find(n => n.id === fromId);
+      const targetNode = nodes.value.find(n => n.id === targetId);
+      
+      if (fromNode?.type === 'top' && targetNode?.type === 'basic') {
+        toast('无效连接：顶事件不能直接连接到基本事件', 'error');
+      } else if (!canAddEdge(edges.value, fromId, targetId, { allowMultipleEdges: allowMultipleEdges.value })) {
+        toast('两节点只能有一条连线', 'error');
+      } else {
+        const edgeId = nextEdgeId();
+        const edge = { id: edgeId, source: fromId, target: targetId, style: { color: '#22d3ee', width: 4 } };
+        exec({
+          do: () => {
+            edges.value = [...edges.value, edge];
+            toast('连线成功');
+          },
+          undo: () => {
+            edges.value = edges.value.filter(e => e.id !== edgeId);
+          }
+        });
+      }
+    }
+    connectDrag.value = null;
+    return;
+  }
+
   selectedEdgeId.value = ''
   selectedNodeId.value = id
   if (effects) {
@@ -809,6 +1188,10 @@ const handleSelectNode = (id, { effects = true, focus = false } = {}) => {
 }
 
 const handleSelectEdge = (id) => {
+  if (connectDrag.value) {
+    connectDrag.value = null;
+    return;
+  }
   selectedNodeId.value = ''
   selectedEdgeId.value = id
   playClickSound()
@@ -816,8 +1199,20 @@ const handleSelectEdge = (id) => {
 
 const handleCanvasClick = (event) => {
   if (reconnectMode.value) return
+  
+  // If we are currently dragging a connection line, cancel it when clicking blank canvas
+  if (connectDrag.value) {
+    connectDrag.value = null;
+    return;
+  }
+
   const nodeEl = event.target?.closest?.('[data-node-id]')
   if (nodeEl?.dataset?.nodeId) return
+  
+  // Only clear selection if we're not clicking on a control button
+  const controlEl = event.target?.closest?.('button, input, select, textarea')
+  if (controlEl) return
+
   selectedNodeId.value = ''
   selectedEdgeId.value = ''
 }
@@ -841,12 +1236,11 @@ const handleStartConnect = (fromId, event) => {
   const fromNode = nodes.value.find(n => n.id === fromId)
   const rect = canvasRef.value.getBoundingClientRect()
   
-  // Validation: Check if trying to connect from Top Event to Basic Event
-  if (fromNode?.type === 'top') {
-    // Will validate on drop, but can show warning hint here if needed
+  // Initialize connectDrag. The mouseMove handler will update 'to'
+  connectDrag.value = { 
+    fromId, 
+    to: { x: event.clientX - rect.left, y: event.clientY - rect.top } 
   }
-  
-  connectDrag.value = { fromId, to: { x: event.clientX - rect.left, y: event.clientY - rect.top } }
 }
 
 const reconnectDrag = ref(null)
@@ -1398,6 +1792,8 @@ const edgeRenders = computed(() => {
 
 .c-root {
   position: relative;
+  background: var(--c-bg-dark); /* Ensure a base background */
+  overflow: hidden;
   --c-bg-dark: radial-gradient(1200px 600px at 25% 15%, rgba(34, 211, 238, 0.12), transparent 55%),
     radial-gradient(900px 500px at 75% 20%, rgba(167, 139, 250, 0.12), transparent 55%),
     linear-gradient(135deg, #020617 0%, #0b1026 45%, #020617 100%);
@@ -1413,6 +1809,43 @@ const edgeRenders = computed(() => {
   --c-surface-2: rgba(255, 255, 255, 0.085);
   --c-surface-3: rgba(255, 255, 255, 0.14);
   --c-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  --c-font-size-base: 14px;
+  --c-font-size-lg: 16px;
+  --c-font-size-xl: 18px;
+  --c-node-width: 220px;
+  --c-node-height: 92px;
+}
+
+.c-root[data-font-size="xs"] {
+  --c-font-size-base: 12px;
+  --c-font-size-lg: 14px;
+  --c-font-size-xl: 16px;
+  --c-node-width: 190px;
+  --c-node-height: 80px;
+}
+
+.c-root[data-font-size="sm"] {
+  /* Default values already set in .c-root */
+}
+
+.c-root[data-font-size="lg"] {
+  --c-font-size-base: 18px;
+  --c-font-size-lg: 22px;
+  --c-font-size-xl: 26px;
+  --c-node-width: 280px;
+  --c-node-height: 120px;
+}
+
+.c-root[data-font-size="xl"] {
+  --c-font-size-base: 22px;
+  --c-font-size-lg: 28px;
+  --c-font-size-xl: 34px;
+  --c-node-width: 380px;
+  --c-node-height: 180px;
+}
+
+.c-root[data-elderly="true"] {
+  /* Keep for backward compatibility or remove if not needed */
 }
 
 .c-root[data-theme="light"] {
@@ -1425,6 +1858,14 @@ const edgeRenders = computed(() => {
   --c-surface-2: rgba(255, 255, 255, 0.86);
   --c-surface-3: rgba(255, 255, 255, 0.94);
   --c-shadow: 0 18px 56px rgba(15, 23, 42, 0.16);
+}
+
+.c-root:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: var(--c-bg-dark) !important;
 }
 
 .c-radius {
@@ -1465,6 +1906,7 @@ const edgeRenders = computed(() => {
   inset: 0;
   z-index: 0;
   transform: translateZ(0);
+  background: var(--c-bg); /* Use current theme background */
 }
 
 .c-bg[data-theme="dark"] {
@@ -1506,11 +1948,32 @@ const edgeRenders = computed(() => {
   border: 1px solid var(--c-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, filter 220ms ease, background-color 420ms ease, color 420ms ease;
+  width: var(--c-node-width);
+  height: var(--c-node-height);
+  transition: width 300ms ease, height 300ms ease, transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, filter 220ms ease, background-color 420ms ease, color 420ms ease;
 }
 
+.c-root[data-font-size="xs"] .text-xs { font-size: 10px !important; }
+.c-root[data-font-size="xs"] .text-sm { font-size: 12px !important; }
+.c-root[data-font-size="xs"] .text-[15px],
+.c-root[data-font-size="xs"] .text-base { font-size: 13px !important; }
+
+.c-root[data-font-size="sm"] .text-xs { font-size: 12px !important; }
+.c-root[data-font-size="sm"] .text-sm { font-size: 14px !important; }
+.c-root[data-font-size="sm"] .text-[15px],
+.c-root[data-font-size="sm"] .text-base { font-size: 15px !important; }
+
+.c-root[data-font-size="lg"] .text-xs { font-size: 18px !important; }
+.c-root[data-font-size="lg"] .text-sm { font-size: 22px !important; }
+.c-root[data-font-size="lg"] .text-[15px],
+.c-root[data-font-size="lg"] .text-base { font-size: 26px !important; }
+
+.c-root[data-font-size="xl"] .text-xs { font-size: 22px !important; }
+.c-root[data-font-size="xl"] .text-sm { font-size: 28px !important; }
+.c-root[data-font-size="xl"] .text-[15px],
+.c-root[data-font-size="xl"] .text-base { font-size: 34px !important; }
+
 .c-node:hover {
-  transform: translateY(-1px) scale(1.015);
   box-shadow: 0 26px 70px rgba(0, 0, 0, 0.22);
 }
 
@@ -1532,7 +1995,6 @@ const edgeRenders = computed(() => {
 .c-node.is-selected {
   border-width: 2px;
   box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 18px 58px rgba(34, 211, 238, 0.14), 0 28px 78px rgba(167, 139, 250, 0.12);
-  transform: translateY(-2px) scale(1.01);
   filter: saturate(1.18) contrast(1.05);
 }
 
@@ -1579,22 +2041,18 @@ const edgeRenders = computed(() => {
 @keyframes c-glow-in {
   from {
     opacity: 0;
-    transform: scale(0.98);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
 @keyframes c-glow-out {
   from {
     opacity: 0;
-    transform: scale(0.98);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -1626,15 +2084,23 @@ const edgeRenders = computed(() => {
 
 .c-handle {
   box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 10px 26px rgba(34, 211, 238, 0.14);
+  /* Disable transform transition to prevent any "shaking" or movement jump */
+  transition: box-shadow 200ms ease, background-color 200ms ease, border-color 200ms ease !important;
 }
 
 .c-root button {
   transition: transform 200ms ease, box-shadow 200ms ease, background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 
-.c-root button:hover {
+.c-root button:not(.c-handle):hover {
   transform: translateY(-1px) scale(1.02);
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.14);
+}
+
+.c-handle:hover {
+  /* Maintain the centering transform without any other movement */
+  transform: translateX(-50%) !important;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.45), 0 0 15px rgba(34, 211, 238, 0.25);
 }
 
 .c-root svg {
