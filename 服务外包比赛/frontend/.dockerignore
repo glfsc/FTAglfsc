@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+*.tgz
+dist
+.DS_Store
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+*.log
+.vscode
+.idea
+.nyc_output
+coverage
+.nyc_output/
+coverage/
