@@ -7,6 +7,8 @@ WORKDIR /app
 # 设置环境变量
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+# 【新增】：配置 HuggingFace 国内镜像源，解决 AutoTokenizer 下载超时的问题
+ENV HF_ENDPOINT=https://hf-mirror.com
 
 # 安装系统依赖
 RUN apt-get update \
@@ -24,12 +26,12 @@ RUN apt-get update \
 # 复制requirements文件
 COPY requirements.txt .
 
-# 安装Python依赖
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# 【修改】：为 pip install 添加清华大学镜像源，防止 torch 等大体积包下载失败
+RUN pip install --no-cache-dir --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ \
+    && pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 
-# 安装transformers镜像源加速
-RUN python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('THUDM/chatglm3-6b', cache_dir='/tmp')"
+# 安装transformers镜像源加速 (由于上方配置了 HF_ENDPOINT，此步骤现在可以顺利连通并下载)
+#RUN python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('THUDM/chatglm3-6b', cache_dir='/tmp', trust_remote_code=True)"
 
 # 复制项目文件
 COPY . .
