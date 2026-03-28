@@ -58,6 +58,7 @@ export function resolveDragCollision({
   nodes,
   nodeWidth,
   nodeHeight,
+  getNodeSize,
   safePadding = DEFAULT_NODE_SAFE_PADDING,
   gridStep = 18,
   bounds,
@@ -74,8 +75,22 @@ export function resolveDragCollision({
   x = clamp(x, minX, maxX)
   y = clamp(y, minY, maxY)
 
+  const resolveSize = (n) => {
+    if (typeof getNodeSize === 'function') {
+      const res = getNodeSize(n)
+      const w = Number(res?.width)
+      const h = Number(res?.height)
+      if (Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0) return { width: w, height: h }
+    }
+    return { width: nodeWidth, height: nodeHeight }
+  }
+
+  const movingNode = (Array.isArray(nodes) ? nodes : []).find((n) => n?.id === movingId) ?? null
+  const movingSize = resolveSize(movingNode)
+  const baseArea = Math.max(1, movingSize.width * movingSize.height)
+
   for (let iter = 0; iter < maxIterations; iter++) {
-    const movingRect = rectFromNodePosition(x, y, nodeWidth, nodeHeight, safePadding)
+    const movingRect = rectFromNodePosition(x, y, movingSize.width, movingSize.height, safePadding)
 
     let bestMtv = null
     let bestArea = 0
@@ -85,13 +100,14 @@ export function resolveDragCollision({
 
     for (const n of nodes) {
       if (!n || n.id === movingId) continue
-      const otherRect = rectFromNodePosition(n.x, n.y, nodeWidth, nodeHeight, safePadding)
+      const otherSize = resolveSize(n)
+      const otherRect = rectFromNodePosition(n.x, n.y, otherSize.width, otherSize.height, safePadding)
       const area = rectIntersectionArea(movingRect, otherRect)
       if (area <= 0) continue
       overlaps++
       const mtv = computeMinimumTranslationVector(movingRect, otherRect)
       if (mtv.magnitude > 0) {
-        const w = Math.min(2.2, 0.6 + area / (nodeWidth * nodeHeight))
+        const w = Math.min(2.2, 0.6 + area / baseArea)
         forceX += mtv.x * w
         forceY += mtv.y * w
         if (!bestMtv || mtv.magnitude < bestMtv.magnitude) {
@@ -106,7 +122,7 @@ export function resolveDragCollision({
     if (bestMtv) {
       const fx = forceX / overlaps
       const fy = forceY / overlaps
-      const k = 0.35 + Math.min(0.45, bestArea / (nodeWidth * nodeHeight))
+      const k = 0.35 + Math.min(0.45, bestArea / baseArea)
       x += bestMtv.x + fx * k
       y += bestMtv.y + fy * k
     } else {

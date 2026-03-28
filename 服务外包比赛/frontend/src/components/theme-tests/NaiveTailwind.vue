@@ -112,7 +112,7 @@
                 </button>
               </div>
             </div>
-            <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!selectedNodeId && !selectedEdgeId" @click="handleDeleteSelected">删除节点</button>
+            <button class="px-3 py-1.5 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 disabled:opacity-40" :disabled="!selectedNodeId && !selectedEdgeId" @click="handleDeleteSelected">删除</button>
             <div class="w-[1px] h-4 bg-[var(--c-border)] mx-1"></div>
             
             <!-- Export Button Container - Restored h-full and flex items-center for vertical centering -->
@@ -208,13 +208,32 @@
 
               <g v-for="edge in edgeRenders" :key="edge.id">
                 <path
+                  v-if="edge.selectable && edge.id === selectedEdgeId"
+                  :d="edge.path"
+                  fill="none"
+                  :stroke="edge.style.color"
+                  :stroke-width="edge.style.width + 10"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  opacity="0.18"
+                />
+                <path
+                  v-if="edge.selectable && edge.id === selectedEdgeId"
+                  :d="edge.path"
+                  fill="none"
+                  :stroke="edge.style.color"
+                  :stroke-width="edge.style.width + 6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  opacity="0.28"
+                />
+                <path
                   :d="edge.path"
                   fill="none"
                   :stroke="edge.style.color"
                   :stroke-width="edge.style.width"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  :filter="edge.id === selectedEdgeId ? 'url(#c-edge-glow)' : 'none'"
                   :class="edge.selectable ? 'cursor-pointer' : 'pointer-events-none'"
                   @click.stop="edge.selectable && handleSelectEdge(edge.id)"
                 />
@@ -277,7 +296,7 @@
                 :data-node-id="node.id"
                 tabindex="0"
                 role="button"
-                :aria-label="`逻辑门 ${node.gate}（${node.id}），按 Enter 选中`"
+                :aria-label="`逻辑门 ${node.gate}，按 Enter 选中`"
               >
                 <span class="c-node-glow-inner" v-if="node.id === selectedNodeId" :key="'g1-' + nodeEffectKey"></span>
                 <span class="c-node-glow-outer" v-if="node.id === selectedNodeId" :key="'g2-' + nodeEffectKey"></span>
@@ -348,7 +367,7 @@
                 :data-node-id="node.id"
                 tabindex="0"
                 role="button"
-                :aria-label="`节点 ${node.label}（${node.id}），按 Enter 选中，按 Shift+方向键移动`"
+                :aria-label="`节点 ${node.label}，按 Enter 选中，按 Shift+方向键移动`"
               >
                 <span class="c-node-glow-inner" v-if="node.id === selectedNodeId" :key="'g1-' + nodeEffectKey"></span>
                 <span class="c-node-glow-outer" v-if="node.id === selectedNodeId" :key="'g2-' + nodeEffectKey"></span>
@@ -359,7 +378,6 @@
                   <div class="px-2 py-0.5 rounded-full bg-[var(--c-surface-2)]/70 border border-[var(--c-border)] font-semibold text-[var(--c-text)]/85 transition-colors duration-[420ms] whitespace-nowrap">{{ node.probability }}</div>
                 </div>
                 <div class="mt-2 text-sm font-semibold text-[var(--c-text)] transition-colors duration-[420ms] leading-snug">{{ node.label }}</div>
-                <div class="mt-1 text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms] whitespace-nowrap">ID：{{ node.id }}</div>
             
                 <div
                   class="c-handle absolute left-1/2 -translate-x-1/2 -bottom-4 w-10 h-10 rounded-full border-2 border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/40 cursor-crosshair flex items-center justify-center z-20"
@@ -512,10 +530,7 @@
               <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">节点名称</div>
               <input v-model="nodeForm.label" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @blur="commitNodeForm" />
             </div>
-            <div class="space-y-1.5">
-              <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">节点 ID</div>
-              <input v-model="nodeForm.id" disabled class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text-muted)] transition-colors duration-[420ms]" />
-            </div>
+            
             <div v-if="!isGateSelected" class="space-y-1.5">
               <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">事件类型</div>
               <select v-model="nodeForm.type" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @change="commitNodeForm">
@@ -543,7 +558,11 @@
               <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">来源</div>
               <input v-model="nodeForm.source" placeholder="例如：文档抽取 / 手工输入 / 外部系统" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @blur="commitNodeForm" />
             </div>
-            <button class="w-full px-3 py-2 c-radius bg-rose-500/15 border border-rose-400/30 text-rose-200 hover:bg-rose-500/25 transition" @click="handleDeleteSelected">删除节点</button>
+            <button
+              class="w-full px-3 py-2 c-radius border transition"
+              :class="isGateSelected ? 'bg-rose-600/30 border-rose-400/45 text-rose-100 hover:bg-rose-600/40' : 'bg-red-600/70 border-red-300/60 text-white hover:bg-red-600/80'"
+              @click="handleDeleteSelected"
+            >删除</button>
             <div class="text-xs text-[var(--c-text-muted)] text-center mt-2">或按 Delete 键删除</div>
           </div>
 
@@ -558,11 +577,19 @@
     >
       <div class="flex items-start gap-3">
         <textarea v-model="inputText" rows="3" class="flex-1 min-w-0 px-4 py-3 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" placeholder="上传文本 → 抽取 → 生成 → 人工调整 → 导出"></textarea>
-        <label class="px-3.5 py-2 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 cursor-pointer">
-          上传 .json/.txt
-          <input type="file" accept=".json,.txt,application/json,text/plain" class="hidden" @change="handleNativeFileChange" />
-        </label>
-        <button class="px-3.5 py-2 c-radius bg-cyan-500/25 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-500/35 transition" @click="handleGenerateFromJson">生成</button>
+        <div class="flex flex-col items-start gap-1">
+          <label class="px-3.5 py-2 c-radius c-glass border border-[var(--c-border)] text-[var(--c-text)] hover:bg-[var(--c-surface-3)] transition duration-200 cursor-pointer">
+            上传 .json/.txt
+            <input type="file" accept=".json,.txt,application/json,text/plain" class="hidden" @change="handleNativeFileChange" />
+          </label>
+          <div v-if="uploadDisplay" class="text-[11px] text-[var(--c-text-muted)] transition-colors duration-[420ms] whitespace-nowrap">{{ uploadDisplay }}</div>
+        </div>
+        <button
+          class="px-3.5 py-2 c-radius border transition disabled:opacity-60 disabled:cursor-not-allowed"
+          :class="hasUploadedSuccess ? 'bg-cyan-500/55 border-cyan-300/65 text-cyan-50 hover:bg-cyan-500/65' : 'bg-cyan-500/20 border-cyan-400/25 text-cyan-100 hover:bg-cyan-500/28'"
+          :disabled="!canGenerate"
+          @click="handleGenerateFromJson"
+        >生成</button>
       </div>
     </footer>
   </div>
@@ -619,6 +646,16 @@ const histories = ref([
 const selectedHistoryId = ref(histories.value[0]?.id ?? '')
 const connectMode = ref(false)
 const inputText = ref('')
+const uploadState = reactive({ fileName: '', status: 'idle', progress: 0, text: '' })
+const uploadDisplay = computed(() => {
+  if (!uploadState.fileName) return ''
+  if (uploadState.status === 'reading') return `${uploadState.fileName}...${uploadState.progress}%`
+  if (uploadState.status === 'done') return `${uploadState.fileName}...√`
+  if (uploadState.status === 'error') return `${uploadState.fileName}...×`
+  return ''
+})
+const hasUploadedSuccess = computed(() => uploadState.status === 'done' && !!uploadState.fileName && String(uploadState.text || '').trim().length > 0)
+const canGenerate = computed(() => hasUploadedSuccess.value || String(inputText.value || '').trim().length > 0)
 const theme = ref('light')
 const themeTransition = reactive({ active: false, from: 'light', timer: 0 })
 const soundEnabled = ref(false)
@@ -676,23 +713,90 @@ const isExporting = ref(false)
 const showExportMenu = ref(false)
 const showGateMenu = ref(false)
 
+const computeGraphBounds = () => {
+  const pad = 28
+  if (!nodes.value.length) {
+    return { minX: 0, minY: 0, maxX: canvasSize.value.width, maxY: canvasSize.value.height, width: canvasSize.value.width, height: canvasSize.value.height, pad }
+  }
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const n of nodes.value) {
+    if (!n) continue
+    const w = n.type === 'gate' ? gateWidth.value : nodeWidth.value
+    const h = n.type === 'gate' ? gateHeight.value : nodeHeight.value
+    minX = Math.min(minX, n.x)
+    minY = Math.min(minY, n.y)
+    maxX = Math.max(maxX, n.x + w)
+    maxY = Math.max(maxY, n.y + h)
+  }
+  const width = Math.max(1, Math.ceil(maxX - minX + pad * 2))
+  const height = Math.max(1, Math.ceil(maxY - minY + pad * 2))
+  return { minX, minY, maxX, maxY, width, height, pad }
+}
+
+const renderGraphToPng = async ({ pixelRatio = 2, maxSide = 4096, maxScale = 3, maxCanvasSide = 8192 } = {}) => {
+  if (!canvasRef.value) return ''
+  const { minX, minY, width, height, pad } = computeGraphBounds()
+  const baseScale = (() => {
+    const s = Math.min(maxSide / width, maxSide / height)
+    if (!Number.isFinite(s) || s <= 0) return 1
+    return Math.min(maxScale, s)
+  })()
+
+  const clampToCanvas = (s) => {
+    const maxS = Math.min(maxCanvasSide / width, maxCanvasSide / height)
+    if (!Number.isFinite(maxS) || maxS <= 0) return 1
+    return Math.min(s, maxS)
+  }
+
+  const scale = clampToCanvas(baseScale)
+  const outW = Math.max(1, Math.round(width * scale))
+  const outH = Math.max(1, Math.round(height * scale))
+  const safePixelRatio = (() => {
+    const pr = Math.min(pixelRatio, maxCanvasSide / outW, maxCanvasSide / outH)
+    if (!Number.isFinite(pr) || pr <= 0) return 1
+    return Math.max(1, Math.min(pixelRatio, pr))
+  })()
+  const tx = -minX + pad
+  const ty = -minY + pad
+  return await htmlToImage.toPng(canvasRef.value, {
+    backgroundColor: theme.value === 'dark' ? '#020617' : '#f6f7fb',
+    pixelRatio: safePixelRatio,
+    cacheBust: true,
+    width: outW,
+    height: outH,
+    style: {
+      width: `${canvasSize.value.width}px`,
+      height: `${canvasSize.value.height}px`,
+      transformOrigin: 'top left',
+      transform: `scale(${scale}) translate(${tx}px, ${ty}px)`
+    }
+  })
+}
+
 const exportAsImage = async () => {
   if (!canvasRef.value) return
   isExporting.value = true
   showExportMenu.value = false
   try {
-    const dataUrl = await htmlToImage.toPng(canvasRef.value, {
-      backgroundColor: theme.value === 'dark' ? '#020617' : '#f6f7fb',
-      pixelRatio: 2, // High quality
-    })
+    const maxSide = Math.min(5200, Math.max(1800, Math.max(window.innerWidth || 0, window.innerHeight || 0) * 2.2))
+    const dataUrl = await renderGraphToPng({ pixelRatio: 2, maxSide, maxScale: 3, maxCanvasSide: 8192 })
+    if (!dataUrl) {
+      toast('图片导出失败', 'error')
+      return
+    }
     const link = document.createElement('a')
     link.download = `故障树-${new Date().getTime()}.png`
     link.href = dataUrl
+    document.body.appendChild(link)
     link.click()
+    link.remove()
     toast('图片导出成功', 'success')
   } catch (err) {
     console.error('Export error:', err)
-    toast('图片导出失败', 'error')
+    toast(`图片导出失败：${err?.message || err}`, 'error')
   } finally {
     isExporting.value = false
   }
@@ -703,23 +807,33 @@ const exportAsPDF = async () => {
   isExporting.value = true
   showExportMenu.value = false
   try {
-    const dataUrl = await htmlToImage.toPng(canvasRef.value, {
-      backgroundColor: theme.value === 'dark' ? '#020617' : '#f6f7fb',
-      pixelRatio: 2,
-    })
+    const maxSide = Math.min(5200, Math.max(1800, Math.max(window.innerWidth || 0, window.innerHeight || 0) * 2.2))
+    const dataUrl = await renderGraphToPng({ pixelRatio: 2, maxSide, maxScale: 3, maxCanvasSide: 8192 })
+    if (!dataUrl) {
+      toast('PDF 导出失败', 'error')
+      return
+    }
+    const { width, height } = computeGraphBounds()
+    const scale = (() => {
+      const s = Math.min(maxSide / width, maxSide / height)
+      if (!Number.isFinite(s) || s <= 0) return 1
+      return Math.min(4, s)
+    })()
+    const outW = Math.max(1, Math.round(width * scale))
+    const outH = Math.max(1, Math.round(height * scale))
     
     const pdf = new jsPDF({
-      orientation: 'landscape',
+      orientation: outW >= outH ? 'landscape' : 'portrait',
       unit: 'px',
-      format: [canvasSize.value.width, canvasSize.value.height]
+      format: [outW, outH]
     })
     
-    pdf.addImage(dataUrl, 'PNG', 0, 0, canvasSize.value.width, canvasSize.value.height)
+    pdf.addImage(dataUrl, 'PNG', 0, 0, outW, outH)
     pdf.save(`故障树-${new Date().getTime()}.pdf`)
     toast('PDF 导出成功', 'success')
   } catch (err) {
     console.error('PDF Export error:', err)
-    toast('PDF 导出失败', 'error')
+    toast(`PDF 导出失败：${err?.message || err}`, 'error')
   } finally {
     isExporting.value = false
   }
@@ -769,6 +883,11 @@ const gateWidth = computed(() => {
 const gateHeight = computed(() => {
   return Math.max(72, Math.round(nodeHeight.value * 0.80))
 })
+
+const getNodeSizeForCollision = (n) => {
+  if (n?.type === 'gate') return { width: gateWidth.value, height: gateHeight.value }
+  return { width: nodeWidth.value, height: nodeHeight.value }
+}
 
 const nodes = ref([
   { id: 'N-1', label: '空压机无法启动', type: 'top', probability: 0.01, source: '', x: 360, y: 40 },
@@ -831,8 +950,44 @@ const edgeForm = reactive({
   width: 4
 })
 
+const toPickerColor = (color) => {
+  const c = String(color || '').trim()
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) return c
+  const m = c.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i)
+  if (m) {
+    const toHex2 = (n) => String(Math.max(0, Math.min(255, Number(n) || 0)).toString(16)).padStart(2, '0')
+    return `#${toHex2(m[1])}${toHex2(m[2])}${toHex2(m[3])}`
+  }
+  return '#22d3ee'
+}
+
+const parseColorToRgb = (color) => {
+  const c = String(color || '').trim()
+  if (!c) return null
+  const m = c.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i)
+  if (m) return { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) }
+  const h = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  if (!h) return null
+  const hex = h[1].toLowerCase()
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16)
+    const g = parseInt(hex[1] + hex[1], 16)
+    const b = parseInt(hex[2] + hex[2], 16)
+    return { r, g, b }
+  }
+  const r = parseInt(hex.slice(0, 2), 16)
+  const g = parseInt(hex.slice(2, 4), 16)
+  const b = parseInt(hex.slice(4, 6), 16)
+  return { r, g, b }
+}
+
+const isYellowishColor = (color) => {
+  const rgb = parseColorToRgb(color)
+  if (!rgb) return false
+  return rgb.r >= 200 && rgb.g >= 160 && rgb.b <= 120
+}
+
 const nodeForm = reactive({
-  id: '',
   label: '',
   type: 'middle',
   gate: 'AND',
@@ -844,7 +999,6 @@ watch(
   selectedNodeId,
   () => {
     if (!selectedNode.value) {
-      nodeForm.id = ''
       nodeForm.label = ''
       nodeForm.type = 'middle'
       nodeForm.gate = 'AND'
@@ -852,7 +1006,6 @@ watch(
       nodeForm.source = ''
       return
     }
-    nodeForm.id = selectedNode.value.id
     nodeForm.label = selectedNode.value.label ?? ''
     nodeForm.type = selectedNode.value.type
     nodeForm.gate = selectedNode.value.gate ?? 'AND'
@@ -877,7 +1030,7 @@ watch(
     edgeForm.source = selectedEdge.value.source
     edgeForm.target = selectedEdge.value.target
     const style = normalizeEdgeStyle(selectedEdge.value.style, { defaultColor: '#22d3ee', defaultWidth: 4 })
-    edgeForm.color = style.color
+    edgeForm.color = toPickerColor(style.color)
     edgeForm.width = style.width
   },
   { immediate: true }
@@ -1025,6 +1178,7 @@ const handleDragging = (event) => {
     nodes: nodes.value,
     nodeWidth: nw,
     nodeHeight: nh,
+    getNodeSize: getNodeSizeForCollision,
     safePadding,
     gridStep,
     bounds: { minX, minY, maxX, maxY }
@@ -1083,7 +1237,7 @@ const addNode = () => {
   const baseX = 80 + (nodes.value.length % 5) * 120
   const baseY = 420
   const proposed = { x: snapToGrid(baseX, gridStep), y: snapToGrid(baseY, gridStep) }
-  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth: nw, nodeHeight: nh, safePadding, gridStep, bounds }) : proposed
+  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth: nw, nodeHeight: nh, getNodeSize: getNodeSizeForCollision, safePadding, gridStep, bounds }) : proposed
   const node = { id, label: `新节点 ${id.slice(2)}`, type: 'basic', probability: 0.001, source: '', x: pos.x, y: pos.y }
 
   exec({
@@ -1105,11 +1259,9 @@ const handleAddNode = () => addNode()
 const addGateNode = (gate) => {
   const id = nextGateId()
   const rect = canvasRef.value?.getBoundingClientRect?.()
-  const nw = nodeWidth.value
-  const nh = nodeHeight.value
-  const bounds = rect ? { minX: 12, minY: 12, maxX: rect.width - nw - 12, maxY: rect.height - nh - 12 } : { minX: 12, minY: 12, maxX: 1200, maxY: 900 }
   const w = gateWidth.value
   const h = gateHeight.value
+  const bounds = rect ? { minX: 12, minY: 12, maxX: rect.width - w - 12, maxY: rect.height - h - 12 } : { minX: 12, minY: 12, maxX: 1200, maxY: 900 }
 
   const selected = selectedNode.value
   const base = selected && selected.type !== 'gate'
@@ -1117,7 +1269,7 @@ const addGateNode = (gate) => {
     : { x: 360, y: 220 }
 
   const proposed = { x: snapToGrid(base.x, gridStep), y: snapToGrid(base.y, gridStep) }
-  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth: nw, nodeHeight: nh, safePadding, gridStep, bounds }) : proposed
+  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth: w, nodeHeight: h, getNodeSize: getNodeSizeForCollision, safePadding, gridStep, bounds }) : proposed
   const node = { id, type: 'gate', gate: gate === 'OR' ? 'OR' : 'AND', x: pos.x, y: pos.y }
 
   exec({
@@ -1472,9 +1624,11 @@ const buildFromTriplets = (triplets = []) => {
 
 const handleGenerateFromJson = () => {
   try {
-    const txt = String(inputText.value || '').trim()
-    const list = extractTripletsFromText(txt)
-    const data = list.length ? list : (lastTriplets.value?.length ? lastTriplets.value : [])
+    const txtInput = String(inputText.value || '').trim()
+    const txtUpload = String(uploadState.text || '').trim()
+    const listInput = txtInput ? extractTripletsFromText(txtInput) : []
+    const listUpload = !listInput.length && txtUpload ? extractTripletsFromText(txtUpload) : []
+    const data = listInput.length ? listInput : (listUpload.length ? listUpload : (lastTriplets.value?.length ? lastTriplets.value : []))
     if (!data.length) {
       toast('未找到可用的 triplets（请在输入区粘贴 JSON 或先上传 .json 文件）', 'error')
       return
@@ -1622,26 +1776,42 @@ const handleNativeFileChange = (event) => {
   const file = event.target.files?.[0]
   if (!file) return
   const reader = new FileReader()
+  uploadState.fileName = file.name
+  uploadState.status = 'reading'
+  uploadState.progress = 0
+  uploadState.text = ''
+  lastTriplets.value = []
+  reader.onprogress = (e) => {
+    if (!e?.lengthComputable) return
+    const pct = Math.max(0, Math.min(100, Math.round((e.loaded / e.total) * 100)))
+    uploadState.progress = pct
+  }
   reader.onload = () => {
     try {
       const text = String(reader.result ?? '')
       const list = extractTripletsFromText(text)
       if (list.length) {
         lastTriplets.value = list
-        buildFromTriplets(list)
-        toast(`已根据 ${file.name} 构建故障树（事件 ${nodes.value.length}，连线 ${edges.value.length}）`, 'success')
-        addHistoryFromTriplets(list, file.name)
+        uploadState.text = text
+        uploadState.status = 'done'
+        uploadState.progress = 100
+        toast(`已载入 ${file.name}，点击“生成”可构建故障树`, 'info')
         return
       }
-      inputText.value = text
-      toast(`已载入 ${file.name} 到输入区，点击“生成”可解析`, 'info')
+      uploadState.text = text
+      uploadState.status = 'done'
+      uploadState.progress = 100
+      toast(`已载入 ${file.name}，点击“生成”可解析`, 'info')
     } catch (e) {
       const text = String(reader.result ?? '')
-      inputText.value = text
-      toast(`已载入 ${file.name} 到输入区（解析为文本）`, 'info')
+      uploadState.text = text
+      uploadState.status = 'done'
+      uploadState.progress = 100
+      toast(`已载入 ${file.name}，点击“生成”可解析`, 'info')
     }
   }
   reader.onerror = () => {
+    uploadState.status = 'error'
     toast('文件读取失败', 'error')
   }
   try {
@@ -1716,12 +1886,39 @@ const validateConnection = (fromId, targetId) => {
   return { ok: true, message: '' }
 }
 
+const resolveGateUnderEvent = (eventId) => {
+  const eventNode = nodes.value.find((n) => n.id === eventId)
+  if (!eventNode || eventNode.type === 'gate') return ''
+  const linked = edges.value.find((e) => e.source === eventId && nodes.value.find((n) => n.id === e.target)?.type === 'gate')
+  if (linked?.target) return linked.target
+
+  const eventCenterX = eventNode.x + nodeWidth.value / 2
+  const belowGates = nodes.value
+    .filter((n) => n.type === 'gate' && n.y >= eventNode.y)
+    .map((g) => {
+      const dx = Math.abs(g.x + gateWidth.value / 2 - eventCenterX)
+      const dy = Math.max(0, g.y - eventNode.y)
+      return { id: g.id, score: dy * 2 + dx }
+    })
+    .sort((a, b) => a.score - b.score)
+  return belowGates[0]?.id ?? ''
+}
+
+const resolveEventToEventDrop = ({ fromHandle, fromId, hoveredId }) => {
+  const fromNode = nodes.value.find((n) => n.id === fromId)
+  const hoveredNode = nodes.value.find((n) => n.id === hoveredId)
+  if (!fromNode || !hoveredNode) return hoveredId
+  if (fromNode.type === 'gate' || hoveredNode.type === 'gate') return hoveredId
+  const gateId = resolveGateUnderEvent(hoveredId)
+  return gateId || hoveredId
+}
+
 const handleSelectNode = (id, { effects = true, focus = false } = {}) => {
   // If we are currently dragging a connection line, finish it when clicking a node
   if (connectDrag.value) {
     const fromId = connectDrag.value.fromId;
     const fromHandle = connectDrag.value.fromHandle ?? 'out'
-    const hoveredId = id;
+    const hoveredId = resolveEventToEventDrop({ fromHandle, fromId, hoveredId: id });
     
     if (fromId !== hoveredId) {
       // Reuse logic from handleCanvasMouseUp
@@ -1789,7 +1986,6 @@ const handleSelectNode = (id, { effects = true, focus = false } = {}) => {
 const handleSelectEdge = (id) => {
   if (connectDrag.value) {
     connectDrag.value = null;
-    return;
   }
   selectedNodeId.value = ''
   selectedEdgeId.value = id
@@ -1886,7 +2082,13 @@ const handleCanvasMouseUp = (event) => {
     const edge = edges.value.find((e) => e.id === drag.edgeId)
     if (!edge) return
     const before = { source: edge.source, target: edge.target }
-    const after = drag.end === 'source' ? { source: nextNodeId, target: edge.target } : { source: edge.source, target: nextNodeId }
+    const rawAfter = drag.end === 'source' ? { source: nextNodeId, target: edge.target } : { source: edge.source, target: nextNodeId }
+    const fromIsGate = nodes.value.find((n) => n.id === rawAfter.source)?.type === 'gate'
+    const targetIsGate = nodes.value.find((n) => n.id === rawAfter.target)?.type === 'gate'
+    const snappedId = (!fromIsGate && !targetIsGate) ? resolveGateUnderEvent(nextNodeId) : ''
+    const after = drag.end === 'source'
+      ? { source: snappedId || rawAfter.source, target: rawAfter.target }
+      : { source: rawAfter.source, target: snappedId || rawAfter.target }
     if (after.source === after.target) return
     const validation = validateConnection(after.source, after.target)
     if (!validation.ok) {
@@ -1907,9 +2109,10 @@ const handleCanvasMouseUp = (event) => {
   const selector = fromHandle === 'in' ? '[data-handle="out"]' : '[data-handle="in"]'
   const handleEl = event.target?.closest?.(selector)
   const nodeEl = event.target?.closest?.('[data-node-id]')
-  const hoveredId = handleEl?.dataset?.nodeId ?? nodeEl?.dataset?.nodeId
+  const rawHoveredId = handleEl?.dataset?.nodeId ?? nodeEl?.dataset?.nodeId
   connectDrag.value = null
-  if (!hoveredId || hoveredId === fromId) return
+  if (!rawHoveredId || rawHoveredId === fromId) return
+  const hoveredId = resolveEventToEventDrop({ fromHandle, fromId, hoveredId: rawHoveredId })
   
   const sourceId = fromHandle === 'in' ? hoveredId : fromId
   const targetId = fromHandle === 'in' ? fromId : hoveredId
@@ -1989,8 +2192,10 @@ const handleGlobalKeydown = (event) => {
 
   const step = event.shiftKey ? 20 : 8
   const rect = canvasRef.value?.getBoundingClientRect?.()
-  const maxX = rect ? rect.width - nodeWidth - 12 : Infinity
-  const maxY = rect ? rect.height - nodeHeight - 12 : Infinity
+  const w = node.type === 'gate' ? gateWidth.value : nodeWidth.value
+  const h = node.type === 'gate' ? gateHeight.value : nodeHeight.value
+  const maxX = rect ? rect.width - w - 12 : Infinity
+  const maxY = rect ? rect.height - h - 12 : Infinity
   const minX = 12
   const minY = 12
 
@@ -2007,8 +2212,9 @@ const handleGlobalKeydown = (event) => {
       movingId: node.id,
       proposed: { x: next.x, y: next.y },
       nodes: nodes.value,
-      nodeWidth,
-      nodeHeight,
+      nodeWidth: w,
+      nodeHeight: h,
+      getNodeSize: getNodeSizeForCollision,
       safePadding,
       gridStep,
       bounds: { minX, minY, maxX, maxY }
@@ -2379,7 +2585,11 @@ const edgeRenders = computed(() => {
   return edges.value
     .filter((e) => e.source && e.target)
     .map((e) => {
-      const style = normalizeEdgeStyle(e.style, { defaultColor: '#22d3ee', defaultWidth: 4 })
+      const baseStyle = normalizeEdgeStyle(e.style, { defaultColor: '#22d3ee', defaultWidth: 4 })
+      const style =
+        e.id === selectedEdgeId.value && isYellowishColor(baseStyle.color)
+          ? { color: '#fde047', width: Math.min(12, baseStyle.width + 1) }
+          : baseStyle
       const endpoints = { source: getNodeAnchor(e.source).out, target: getNodeAnchor(e.target).in }
       const points = computeSmoothOrthoPoints(e.source, e.target, grid)
       const path = pointsToRoundedPath(points, 12)

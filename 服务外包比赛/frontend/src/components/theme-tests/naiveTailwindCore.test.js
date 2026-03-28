@@ -77,6 +77,37 @@ describe('naiveTailwindCore', () => {
     expect(rectIntersectionArea(a, b)).toBe(0)
   })
 
+  it('拖拽碰撞：支持不同节点尺寸（例如 gate 与 event）', () => {
+    const safePadding = 8
+    const gridStep = 18
+    const nodes = [
+      { id: 'N-1', x: 120, y: 120, type: 'event' },
+      { id: 'G-1', x: 160, y: 140, type: 'gate' }
+    ]
+
+    const getNodeSize = (n) => (n?.type === 'gate' ? { width: 140, height: 86 } : { width: 300, height: 160 })
+
+    const proposed = { x: 150, y: 130 }
+    const bounds = { minX: 0, minY: 0, maxX: 1200, maxY: 900 }
+    const res = resolveDragCollision({
+      movingId: 'G-1',
+      proposed,
+      nodes,
+      nodeWidth: 140,
+      nodeHeight: 86,
+      getNodeSize,
+      safePadding,
+      gridStep,
+      bounds
+    })
+
+    const aSize = getNodeSize(nodes[0])
+    const bSize = getNodeSize(nodes[1])
+    const a = rectFromNodePosition(nodes[0].x, nodes[0].y, aSize.width, aSize.height, safePadding)
+    const b = rectFromNodePosition(res.x, res.y, bSize.width, bSize.height, safePadding)
+    expect(rectIntersectionArea(a, b)).toBe(0)
+  })
+
   it('删除节点：同时删除关联连线', () => {
     const nodes = [{ id: 'A' }, { id: 'B' }, { id: 'C' }]
     const edges = [
