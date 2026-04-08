@@ -182,12 +182,19 @@
         </div>
 
         <div 
-          class="flex-1 min-h-0 c-panel c-glass shadow-2xl overflow-hidden transition-all duration-[420ms]"
+          class="flex-1 min-h-0 c-panel c-glass shadow-2xl overflow-auto transition-all duration-[420ms] relative"
           :class="isFullscreen ? 'rounded-none border-0 shadow-none' : ''"
         >
           <div
             ref="canvasRef"
-            class="relative h-full w-full outline-none"
+            class="relative outline-none"
+            :style="{ 
+              width: canvasSize.width + 'px', 
+              height: canvasSize.height + 'px',
+              minWidth: '100%',
+              minHeight: '100%',
+              background: 'var(--c-bg)'
+            }"
             tabindex="0"
             :class="connectMode ? 'ring-2 ring-cyan-400/25' : ''"
             @click="handleCanvasClick"
@@ -197,7 +204,8 @@
             <div class="absolute inset-0 c-grid opacity-30 transition-opacity duration-[420ms]"></div>
             <svg class="absolute inset-0" :width="canvasSize.width" :height="canvasSize.height">
               <defs>
-                <filter id="c-edge-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <!-- Use filterUnits="userSpaceOnUse" and a massive region to prevent lines from disappearing on large canvases -->
+                <filter id="c-edge-glow" filterUnits="userSpaceOnUse" x="-10000" y="-10000" width="20000" height="20000">
                   <feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
                   <feMerge>
                     <feMergeNode in="blur"></feMergeNode>
@@ -234,6 +242,7 @@
                   :stroke-width="edge.style.width"
                   stroke-linecap="round"
                   stroke-linejoin="round"
+                  :filter="isExporting ? '' : 'url(#c-edge-glow)'"
                   :class="edge.selectable ? 'cursor-pointer' : 'pointer-events-none'"
                   @click.stop="edge.selectable && handleSelectEdge(edge.id)"
                 />
@@ -326,7 +335,9 @@
                   >{{ node.gate }}</text>
                 </svg>
                 <div
-                  class="c-handle absolute left-1/2 -translate-x-1/2 -bottom-3 w-9 h-9 rounded-full border-2 border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/40 cursor-crosshair flex items-center justify-center z-20"
+                  v-if="node.type !== 'basic'"
+                  class="c-handle absolute left-1/2 -translate-x-1/2 w-9 h-9 rounded-full border-2 border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/40 cursor-crosshair flex items-center justify-center z-20"
+                  :style="{ top: (68 - 18) + 'px' }"
                   title="点击创建连线"
                   role="button"
                   :data-node-id="node.id"
@@ -337,7 +348,9 @@
                   <div class="w-3.5 h-3.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></div>
                 </div>
                 <div
-                  class="c-handle absolute left-1/2 -translate-x-1/2 -top-3 w-9 h-9 rounded-full border-2 border-violet-300/40 bg-violet-400/15 hover:bg-violet-400/30 cursor-crosshair flex items-center justify-center z-20"
+                  v-if="node.type !== 'top'"
+                  class="c-handle absolute left-1/2 -translate-x-1/2 w-9 h-9 rounded-full border-2 border-violet-300/40 bg-violet-400/15 hover:bg-violet-400/30 cursor-crosshair flex items-center justify-center z-20"
+                  :style="{ top: (16 - 18) + 'px' }"
                   title="点击此处或节点完成连接"
                   role="button"
                   :data-node-id="node.id"
@@ -380,7 +393,9 @@
                 <div class="mt-2 text-sm font-semibold text-[var(--c-text)] transition-colors duration-[420ms] leading-snug">{{ node.label }}</div>
             
                 <div
-                  class="c-handle absolute left-1/2 -translate-x-1/2 -bottom-4 w-10 h-10 rounded-full border-2 border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/40 cursor-crosshair flex items-center justify-center z-20"
+                  v-if="node.type !== 'basic'"
+                  class="c-handle absolute left-1/2 -translate-x-1/2 w-10 h-10 rounded-full border-2 border-cyan-300/40 bg-cyan-400/20 hover:bg-cyan-400/40 cursor-crosshair flex items-center justify-center z-20"
+                  :style="{ top: (nodeHeight - 20) + 'px' }"
                   title="点击创建连线"
                   role="button"
                   :data-node-id="node.id"
@@ -391,7 +406,9 @@
                   <div class="w-4 h-4 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></div>
                 </div>
                 <div
-                  class="c-handle absolute left-1/2 -translate-x-1/2 -top-4 w-10 h-10 rounded-full border-2 border-violet-300/40 bg-violet-400/15 hover:bg-violet-400/30 cursor-crosshair flex items-center justify-center z-20"
+                  v-if="node.type !== 'top'"
+                  class="c-handle absolute left-1/2 -translate-x-1/2 w-10 h-10 rounded-full border-2 border-violet-300/40 bg-violet-400/15 hover:bg-violet-400/30 cursor-crosshair flex items-center justify-center z-20"
+                  :style="{ top: '-20px' }"
                   title="点击此处或节点完成连接"
                   role="button"
                   :data-node-id="node.id"
@@ -556,7 +573,13 @@
             </div>
             <div v-if="!isGateSelected" class="space-y-1.5">
               <div class="text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms]">来源</div>
-              <input v-model="nodeForm.source" placeholder="例如：文档抽取 / 手工输入 / 外部系统" class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms]" @blur="commitNodeForm" />
+              <textarea 
+                v-model="nodeForm.source" 
+                placeholder="例如：文档抽取 / 手工输入 / 外部系统" 
+                rows="3"
+                class="w-full px-3 py-2 c-radius bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text)] placeholder-[var(--c-text-muted)]/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-colors duration-[420ms] resize-none overflow-y-auto" 
+                @blur="commitNodeForm"
+              ></textarea>
             </div>
             <button
               class="w-full px-3 py-2 c-radius border transition"
@@ -739,6 +762,11 @@ const computeGraphBounds = () => {
 const renderGraphToPng = async ({ pixelRatio = 2, maxSide = 4096, maxScale = 3, maxCanvasSide = 8192 } = {}) => {
   if (!canvasRef.value) return ''
   const { minX, minY, width, height, pad } = computeGraphBounds()
+  
+  // Set isExporting to true to disable SVG filters
+  isExporting.value = true
+  await nextTick()
+
   const baseScale = (() => {
     const s = Math.min(maxSide / width, maxSide / height)
     if (!Number.isFinite(s) || s <= 0) return 1
@@ -761,19 +789,27 @@ const renderGraphToPng = async ({ pixelRatio = 2, maxSide = 4096, maxScale = 3, 
   })()
   const tx = -minX + pad
   const ty = -minY + pad
-  return await htmlToImage.toPng(canvasRef.value, {
-    backgroundColor: theme.value === 'dark' ? '#020617' : '#f6f7fb',
-    pixelRatio: safePixelRatio,
-    cacheBust: true,
-    width: outW,
-    height: outH,
-    style: {
-      width: `${canvasSize.value.width}px`,
-      height: `${canvasSize.value.height}px`,
-      transformOrigin: 'top left',
-      transform: `scale(${scale}) translate(${tx}px, ${ty}px)`
-    }
-  })
+  
+  try {
+    const result = await htmlToImage.toPng(canvasRef.value, {
+      backgroundColor: theme.value === 'dark' ? '#020617' : '#f6f7fb',
+      pixelRatio: safePixelRatio,
+      cacheBust: true,
+      width: outW,
+      height: outH,
+      style: {
+        width: `${width}px`,
+        height: `${height}px`,
+        transformOrigin: 'top left',
+        transform: `scale(${scale}) translate(${tx}px, ${ty}px)`,
+        // Force overflow visible to capture nodes outside the viewport
+        overflow: 'visible'
+      }
+    })
+    return result
+  } finally {
+    isExporting.value = false
+  }
 }
 
 const exportAsImage = async () => {
@@ -871,10 +907,23 @@ const toast = (message, type = 'info') => {
 }
 
 const canvasRef = ref(null)
-const canvasSize = ref({ width: 1, height: 1 })
+const canvasSize = ref({ width: 4000, height: 4000 })
 
-const safePadding = 8
-const gridStep = 18
+const safePadding = computed(() => {
+  if (fontSizeLevel.value === 'xs') return 6
+  if (fontSizeLevel.value === 'sm') return 8
+  if (fontSizeLevel.value === 'lg') return 12
+  if (fontSizeLevel.value === 'xl') return 16
+  return 8
+})
+
+const gridStep = computed(() => {
+  if (fontSizeLevel.value === 'xs') return 14
+  if (fontSizeLevel.value === 'sm') return 18
+  if (fontSizeLevel.value === 'lg') return 24
+  if (fontSizeLevel.value === 'xl') return 32
+  return 18
+})
 
 const gateWidth = computed(() => {
   return Math.max(120, Math.round(nodeWidth.value * 0.72))
@@ -901,13 +950,13 @@ const nodes = ref([
 ])
 
 const edges = ref([
-  { id: 'E-1', source: 'N-1', target: 'G-1', style: { color: 'rgba(251, 191, 36, 0.85)', width: 4 } },
+  { id: 'E-1', source: 'N-1', target: 'G-1', style: { color: '#fbbf24', width: 4 } },
   { id: 'E-2', source: 'G-1', target: 'N-2', style: { color: '#22d3ee', width: 4 } },
-  { id: 'E-3', source: 'G-1', target: 'N-3', style: { color: '#a78bfa', width: 4 } },
-  { id: 'E-4', source: 'G-1', target: 'N-4', style: { color: '#38bdf8', width: 4 } },
-  { id: 'E-5', source: 'N-2', target: 'G-2', style: { color: 'rgba(251, 191, 36, 0.85)', width: 4 } },
-  { id: 'E-6', source: 'G-2', target: 'N-5', style: { color: '#34d399', width: 4 } },
-  { id: 'E-7', source: 'G-2', target: 'N-6', style: { color: '#34d399', width: 4 } }
+  { id: 'E-3', source: 'G-1', target: 'N-3', style: { color: '#22d3ee', width: 4 } },
+  { id: 'E-4', source: 'G-1', target: 'N-4', style: { color: '#22d3ee', width: 4 } },
+  { id: 'E-5', source: 'N-2', target: 'G-2', style: { color: '#fbbf24', width: 4 } },
+  { id: 'E-6', source: 'G-2', target: 'N-5', style: { color: '#22d3ee', width: 4 } },
+  { id: 'E-7', source: 'G-2', target: 'N-6', style: { color: '#22d3ee', width: 4 } }
 ])
 
 const selectedNodeId = ref('N-3')
@@ -917,6 +966,79 @@ const selectedEdgeId = ref('')
 const selectedEdge = computed(() => edges.value.find((e) => e.id === selectedEdgeId.value) ?? null)
 
 const history = new HistoryManager({ capacity: 50, clone: defaultClone })
+
+// Clipboard state for cut/paste
+const clipboardNode = ref(null)
+const clipboardEdges = ref([])
+const mousePos = reactive({ x: 0, y: 0 })
+
+const handleCut = () => {
+  if (!selectedNodeId.value) return
+  const node = nodes.value.find(n => n.id === selectedNodeId.value)
+  if (!node) return
+
+  // Store node and its connected edges
+  clipboardNode.value = { ...node }
+  clipboardEdges.value = edges.value
+    .filter(e => e.source === node.id || e.target === node.id)
+    .map(e => ({ ...e, style: { ...e.style } }))
+
+  const nodeId = node.id
+  const nodeLabel = node.label
+  const edgeIds = clipboardEdges.value.map(e => e.id)
+
+  exec({
+    do: () => {
+      nodes.value = nodes.value.filter(n => n.id !== nodeId)
+      edges.value = edges.value.filter(e => e.source !== nodeId && e.target !== nodeId)
+      selectedNodeId.value = ''
+      toast(`已剪切节点: ${nodeLabel}`)
+    },
+    undo: () => {
+      nodes.value = [...nodes.value, clipboardNode.value]
+      edges.value = [...edges.value, ...clipboardEdges.value]
+      selectedNodeId.value = nodeId
+    }
+  })
+}
+
+const handlePaste = () => {
+  if (!clipboardNode.value) {
+    toast('剪贴板为空', 'warning')
+    return
+  }
+
+  const newNode = { 
+    ...clipboardNode.value, 
+    x: snapToGrid(mousePos.x - nodeWidth.value / 2, gridStep.value), 
+    y: snapToGrid(mousePos.y - nodeHeight.value / 2, gridStep.value) 
+  }
+  const nodeId = newNode.id
+  
+  // Update edges to point to the new location (same IDs, but they will reconnect)
+  const newEdges = clipboardEdges.value.map(e => ({ ...e }))
+
+  exec({
+    do: () => {
+      nodes.value = [...nodes.value, newNode]
+      edges.value = [...edges.value, ...newEdges]
+      selectedNodeId.value = nodeId
+      toast(`已粘贴节点到当前位置`)
+    },
+    undo: () => {
+      nodes.value = nodes.value.filter(n => n.id !== nodeId)
+      edges.value = edges.value.filter(e => !newEdges.some(ne => ne.id === e.id))
+      selectedNodeId.value = ''
+    }
+  })
+  
+  // Clear clipboard after paste if you want "move" behavior, 
+  // or keep it if you want "copy" behavior. 
+  // User asked for "剪切" (cut) and "移到" (move), so we clear it.
+  clipboardNode.value = null
+  clipboardEdges.value = []
+}
+
 const historyVersion = ref(0)
 const syncHistory = () => {
   historyVersion.value = history.version
@@ -1049,15 +1171,45 @@ const getNodeAnchor = (nodeId) => {
   const isGate = node.type === 'gate'
   const nw = isGate ? gateWidth.value : nodeWidth.value
   const nh = isGate ? gateHeight.value : nodeHeight.value
-  return {
-    in: { x: node.x + nw / 2, y: node.y },
-    out: { x: node.x + nw / 2, y: node.y + nh }
+  
+  let inPos, outPos;
+  
+  if (node.type === 'top') {
+    // Top Event: Only bottom handle for children (gate/middle/basic below)
+    inPos = { x: node.x + nw / 2, y: node.y + nh };
+    outPos = { x: node.x + nw / 2, y: node.y + nh }; 
+  } else if (node.type === 'basic') {
+    // Basic Event: Only top handle for parent (gate above)
+    inPos = { x: node.x + nw / 2, y: node.y }; 
+    outPos = { x: node.x + nw / 2, y: node.y };
+  } else if (node.type === 'gate') {
+    // Gate: Top peak (16) and Bottom base (68)
+    inPos = { x: node.x + nw / 2, y: node.y + 16 };
+    outPos = { x: node.x + nw / 2, y: node.y + 68 };
+  } else {
+    // Middle Event: Top and Bottom
+    inPos = { x: node.x + nw / 2, y: node.y };
+    outPos = { x: node.x + nw / 2, y: node.y + nh };
   }
+  
+  return { in: inPos, out: outPos };
 }
 
 const updateCanvasSize = () => {
   if (!canvasRef.value) return
-  canvasSize.value = { width: canvasRef.value.clientWidth, height: canvasRef.value.clientHeight }
+  // We want the internal canvas size to at least cover all nodes
+  const bounds = computeGraphBounds()
+  const padding = 600 // Increased padding to allow more scrolling room
+  canvasSize.value = { 
+    width: Math.max(canvasRef.value.parentElement?.clientWidth || 4000, bounds.maxX + padding), 
+    height: Math.max(canvasRef.value.parentElement?.clientHeight || 4000, bounds.maxY + padding) 
+  }
+  // Force SVG re-render by toggling a dummy attribute
+  const svgElement = canvasRef.value?.querySelector('svg')
+  if (svgElement) {
+    svgElement.setAttribute('data-refresh', Date.now().toString())
+    svgElement.removeAttribute('data-refresh')
+  }
 }
 
 const canvasResizeObserver = ref(null)
@@ -1088,6 +1240,45 @@ onMounted(() => {
   window.addEventListener('click', handleGlobalClick)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
+
+watch(nodes, () => {
+  updateCanvasSize()
+}, { deep: true })
+
+watch(fontSizeLevel, () => {
+  if (!autoAlign.value) return
+  
+  // Re-resolve collisions for all nodes when font size changes
+  const rect = canvasRef.value?.parentElement?.getBoundingClientRect()
+  if (!rect) return
+  
+  const minX = 12
+  const minY = 12
+  
+  nodes.value.forEach((node) => {
+    const nw = node.type === 'gate' ? gateWidth.value : nodeWidth.value
+    const nh = node.type === 'gate' ? gateHeight.value : nodeHeight.value
+    const maxX = rect.width - nw - 12
+    const maxY = rect.height - nh - 12
+    
+    const resolved = resolveDragCollision({
+      movingId: node.id,
+      proposed: { x: node.x, y: node.y },
+      nodes: nodes.value,
+      nodeWidth: nw,
+      nodeHeight: nh,
+      getNodeSize: getNodeSizeForCollision,
+      safePadding: safePadding.value,
+      gridStep: gridStep.value,
+      bounds: { minX, minY, maxX, maxY }
+    })
+    
+    node.x = resolved.x
+    node.y = resolved.y
+  })
+  
+  updateCanvasSize()
+}, { deep: true })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateCanvasSize)
@@ -1179,8 +1370,8 @@ const handleDragging = (event) => {
     nodeWidth: nw,
     nodeHeight: nh,
     getNodeSize: getNodeSizeForCollision,
-    safePadding,
-    gridStep,
+    safePadding: safePadding.value,
+    gridStep: gridStep.value,
     bounds: { minX, minY, maxX, maxY }
   })
   node.x = resolved.x
@@ -1230,14 +1421,40 @@ const deleteNodeById = (id) => {
 
 const addNode = () => {
   const id = nextNodeId()
-  const rect = canvasRef.value?.getBoundingClientRect?.()
+  const parent = canvasRef.value?.parentElement
   const nw = nodeWidth.value
   const nh = nodeHeight.value
-  const bounds = rect ? { minX: 12, minY: 12, maxX: rect.width - nw - 12, maxY: rect.height - nh - 12 } : { minX: 12, minY: 12, maxX: 1200, maxY: 900 }
-  const baseX = 80 + (nodes.value.length % 5) * 120
-  const baseY = 420
-  const proposed = { x: snapToGrid(baseX, gridStep), y: snapToGrid(baseY, gridStep) }
-  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth: nw, nodeHeight: nh, getNodeSize: getNodeSizeForCollision, safePadding, gridStep, bounds }) : proposed
+  
+  let baseX, baseY;
+  if (parent) {
+    // Calculate center of current scroll viewport
+    const scrollX = parent.scrollLeft
+    const scrollY = parent.scrollTop
+    const viewW = parent.clientWidth
+    const viewH = parent.clientHeight
+    
+    baseX = scrollX + (viewW - nw) / 2
+    baseY = scrollY + (viewH - nh) / 2
+  } else {
+    baseX = 80 + (nodes.value.length % 5) * 120
+    baseY = 420
+  }
+
+  const proposed = { x: snapToGrid(baseX, gridStep.value), y: snapToGrid(baseY, gridStep.value) }
+  const bounds = { minX: 12, minY: 12, maxX: canvasSize.value.width - nw - 12, maxY: canvasSize.value.height - nh - 12 }
+  
+  const pos = autoAlign.value ? resolveDragCollision({ 
+    movingId: id, 
+    proposed, 
+    nodes: nodes.value, 
+    nodeWidth: nw, 
+    nodeHeight: nh, 
+    getNodeSize: getNodeSizeForCollision, 
+    safePadding: safePadding.value, 
+    gridStep: gridStep.value, 
+    bounds 
+  }) : proposed
+  
   const node = { id, label: `新节点 ${id.slice(2)}`, type: 'basic', probability: 0.001, source: '', x: pos.x, y: pos.y }
 
   exec({
@@ -1258,18 +1475,39 @@ const handleAddNode = () => addNode()
 
 const addGateNode = (gate) => {
   const id = nextGateId()
-  const rect = canvasRef.value?.getBoundingClientRect?.()
+  const parent = canvasRef.value?.parentElement
   const w = gateWidth.value
   const h = gateHeight.value
-  const bounds = rect ? { minX: 12, minY: 12, maxX: rect.width - w - 12, maxY: rect.height - h - 12 } : { minX: 12, minY: 12, maxX: 1200, maxY: 900 }
-
+  
   const selected = selectedNode.value
-  const base = selected && selected.type !== 'gate'
-    ? { x: selected.x + nodeWidth.value / 2 - w / 2, y: selected.y + nodeHeight.value + 48 }
-    : { x: 360, y: 220 }
+  let base;
+  if (selected && selected.type !== 'gate') {
+    base = { x: selected.x + nodeWidth.value / 2 - w / 2, y: selected.y + nodeHeight.value + 48 }
+  } else if (parent) {
+    // Center in current scroll viewport
+    base = { 
+      x: parent.scrollLeft + (parent.clientWidth - w) / 2,
+      y: parent.scrollTop + (parent.clientHeight - h) / 2
+    }
+  } else {
+    base = { x: 360, y: 220 }
+  }
 
-  const proposed = { x: snapToGrid(base.x, gridStep), y: snapToGrid(base.y, gridStep) }
-  const pos = autoAlign.value ? resolveDragCollision({ movingId: id, proposed, nodes: nodes.value, nodeWidth: w, nodeHeight: h, getNodeSize: getNodeSizeForCollision, safePadding, gridStep, bounds }) : proposed
+  const proposed = { x: snapToGrid(base.x, gridStep.value), y: snapToGrid(base.y, gridStep.value) }
+  const bounds = { minX: 12, minY: 12, maxX: canvasSize.value.width - w - 12, maxY: canvasSize.value.height - h - 12 }
+  
+  const pos = autoAlign.value ? resolveDragCollision({ 
+    movingId: id, 
+    proposed, 
+    nodes: nodes.value, 
+    nodeWidth: w, 
+    nodeHeight: h, 
+    getNodeSize: getNodeSizeForCollision, 
+    safePadding: safePadding.value, 
+    gridStep: gridStep.value, 
+    bounds 
+  }) : proposed
+  
   const node = { id, type: 'gate', gate: gate === 'OR' ? 'OR' : 'AND', x: pos.x, y: pos.y }
 
   exec({
@@ -1480,18 +1718,24 @@ const extractTripletsFromText = (text) => {
 
 const nameKey = (label, type) => `${String(type || '').toLowerCase()}::${String(label || '').trim()}`
 
-const ensureNode = (label, type, { probability = 0.001, source = '' } = {}) => {
-  const key = nameKey(label, type)
-  const existing = nodes.value.find(n => nameKey(n.label, n.type) === key)
-  if (existing) {
-    if (source && !existing.source) existing.source = source
-    if (typeof probability === 'number' && !Number.isNaN(probability)) existing.probability = probability
-    return existing.id
+const ensureNode = (label, type, { probability = 0.001, source = '', forceNew = false } = {}) => {
+  const normalizedLabel = String(label || '').trim()
+  
+  if (!forceNew) {
+    // Match by label only to avoid broken connections due to type inconsistencies in triplets
+    const existing = nodes.value.find(n => n.type !== 'gate' && String(n.label || '').trim() === normalizedLabel)
+    
+    if (existing) {
+      if (source && !existing.source) existing.source = source
+      if (typeof probability === 'number' && !Number.isNaN(probability)) existing.probability = probability
+      return existing.id
+    }
   }
+  
   const id = nextNodeId()
   const posX = (nodes.value.length % 8) * 120 + 80
   const posY = type === 'top' ? 40 : type === 'middle' ? 220 : 420
-  const node = { id, label: String(label || `事件 ${id.slice(2)}`), type, probability, source, x: posX, y: posY }
+  const node = { id, label: normalizedLabel, type, probability, source, x: posX, y: posY }
   nodes.value = [...nodes.value, node]
   return id
 }
@@ -1502,13 +1746,40 @@ const buildFromTriplets = (triplets = []) => {
   selectedNodeId.value = ''
   selectedEdgeId.value = ''
 
+  const nameToId = new Map() // Local mapping for current session
+  const nodeHasParent = new Set() // Tracks nodes already assigned as subjects
   const groups = new Map()
+
   for (const t of triplets || []) {
     const subjType = mapEventType(t?.subject_type)
     const objType = mapEventType(t?.object_type)
     if (String(t?.object_type || '').toLowerCase() === 'logicconstraint') continue
-    const subjId = ensureNode(t?.subject_name, subjType, { probability: Number(t?.confidence) || 0.001, source: t?.source || '' })
-    const objId = ensureNode(t?.object_name, objType, { probability: Number(t?.confidence) || 0.001, source: t?.source || '' })
+
+    // 1. Handle Object (Parent)
+    let objId = nameToId.get(t?.object_name)
+    if (!objId) {
+      objId = ensureNode(t?.object_name, objType, { probability: Number(t?.confidence) || 0.001, source: t?.source || '' })
+      nameToId.set(t?.object_name, objId)
+    }
+
+    // 2. Handle Subject (Child)
+    // Rule: If a node name is used as a subject multiple times (different parents), create duplicates.
+    let subjId = nameToId.get(t?.subject_name)
+    if (subjId && !nodeHasParent.has(subjId)) {
+      // Reuse the existing instance because it doesn't have a parent yet.
+      nodeHasParent.add(subjId)
+    } else {
+      // Create a NEW instance (duplicate) because it already has a parent or is new.
+      subjId = ensureNode(t?.subject_name, subjType, { 
+        probability: Number(t?.confidence) || 0.001, 
+        source: t?.source || '',
+        forceNew: true 
+      })
+      nodeHasParent.add(subjId)
+      // Update map so subsequent triplets *might* use this as a parent if needed.
+      nameToId.set(t?.subject_name, subjId)
+    }
+
     const gateType = relationToGate(t?.relation)
     const g = groups.get(objId) ?? { gate: '', subjects: [] }
     if (!g.subjects.includes(subjId)) g.subjects.push(subjId)
@@ -1521,13 +1792,15 @@ const buildFromTriplets = (triplets = []) => {
     const obj = nodes.value.find(n => n.id === objId)
     const w = gateWidth.value
     const h = gateHeight.value
+
     const x = obj ? obj.x + (nodeWidth.value / 2) - w / 2 : 360
-    const y = obj ? obj.y + nodeHeight.value + 48 : 220
+    const y = obj ? obj.y + nodeHeight.value + 60 : 220 // Increased gap to avoid crossing handles
     nodes.value = [...nodes.value, { id: gateId, type: 'gate', gate: info.gate, parentId: objId, x, y }]
-    edges.value = [...edges.value, { id: nextEdgeId(), source: objId, target: gateId, style: { color: 'rgba(251, 191, 36, 0.85)', width: 4 } }]
+    // Parent to Gate: Yellow
+    edges.value = [...edges.value, { id: nextEdgeId(), source: objId, target: gateId, style: { color: '#fbbf24', width: 4 } }]
     for (const sId of info.subjects) {
-      const color = '#22d3ee'
-      edges.value = [...edges.value, { id: nextEdgeId(), source: gateId, target: sId, style: { color, width: 4 } }]
+      // Gate to Child: Blue
+      edges.value = [...edges.value, { id: nextEdgeId(), source: gateId, target: sId, style: { color: '#22d3ee', width: 4 } }]
     }
   }
 
@@ -1620,6 +1893,10 @@ const buildFromTriplets = (triplets = []) => {
     })
   }
   layoutGrid()
+  // Ensure canvas size is updated after layout to include all nodes
+  nextTick(() => {
+    updateCanvasSize()
+  })
 }
 
 const handleGenerateFromJson = () => {
@@ -2067,8 +2344,15 @@ const handleStartReconnectDrag = (edgeId, end, event) => {
 const handleCanvasMouseMove = (event) => {
   if (!canvasRef.value) return
   const rect = canvasRef.value.getBoundingClientRect()
-  if (connectDrag.value) connectDrag.value.to = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-  if (reconnectDrag.value) reconnectDrag.value.to = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+  
+  // Track mouse position for paste
+  mousePos.x = x
+  mousePos.y = y
+
+  if (connectDrag.value) connectDrag.value.to = { x, y }
+  if (reconnectDrag.value) reconnectDrag.value.to = { x, y }
 }
 
 const handleCanvasMouseUp = (event) => {
@@ -2154,6 +2438,22 @@ const handleGlobalKeydown = (event) => {
     return
   }
 
+  // Handle Ctrl+X (Cut)
+  if (!isTyping && (event.ctrlKey || event.metaKey) && (event.key === 'x' || event.key === 'X')) {
+    if (selectedNodeId.value) {
+      event.preventDefault()
+      handleCut()
+    }
+    return
+  }
+
+  // Handle Ctrl+V (Paste)
+  if (!isTyping && (event.ctrlKey || event.metaKey) && (event.key === 'v' || event.key === 'V')) {
+    event.preventDefault()
+    handlePaste()
+    return
+  }
+
   if (event.key === 'Escape') {
     reconnectMode.value = false
     connectDrag.value = null
@@ -2215,8 +2515,8 @@ const handleGlobalKeydown = (event) => {
       nodeWidth: w,
       nodeHeight: h,
       getNodeSize: getNodeSizeForCollision,
-      safePadding,
-      gridStep,
+      safePadding: safePadding.value,
+      gridStep: gridStep.value,
       bounds: { minX, minY, maxX, maxY }
     })
     next = { x: resolved.x, y: resolved.y }
@@ -2267,10 +2567,14 @@ const findNextNodeByDirection = (fromId, key) => {
 }
 
 const buildObstacleGrid = (step) => {
-  const cols = Math.max(1, Math.ceil(canvasSize.value.width / step))
-  const rows = Math.max(1, Math.ceil(canvasSize.value.height / step))
+  const bounds = computeGraphBounds()
+  const padding = 1200 // Even more padding for very wide trees
+  const width = Math.max(canvasSize.value.width, bounds.maxX + padding)
+  const height = Math.max(canvasSize.value.height, bounds.maxY + padding)
+  const cols = Math.max(1, Math.ceil(width / step))
+  const rows = Math.max(1, Math.ceil(height / step))
   const blocked = new Uint8Array(cols * rows)
-  const pad = 16
+  const pad = 10 // Further reduced node collision padding to avoid blocking all paths
   for (const n of nodes.value) {
     const w = n.type === 'gate' ? gateWidth.value : nodeWidth.value
     const h = n.type === 'gate' ? gateHeight.value : nodeHeight.value
@@ -2280,7 +2584,7 @@ const buildObstacleGrid = (step) => {
     const y1 = Math.min(rows - 1, Math.floor((n.y + h + pad) / step))
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) blocked[y * cols + x] = 1
   }
-  return { cols, rows, blocked, step }
+  return { cols, rows, blocked, step, width, height }
 }
 
 const clampToGrid = (grid, point) => {
@@ -2462,13 +2766,31 @@ const computeMidPointOnPolyline = (points) => {
 }
 
 const getNodePorts = (nodeId) => {
+  const node = nodes.value.find(n => n.id === nodeId)
   const a = getNodeAnchor(nodeId)
   const offset = 26
+  
+  let outOuter, inOuter;
+  
+  if (node?.type === 'top') {
+    // Top Event: Only bottom handle, outer is BELOW
+    outOuter = { x: a.out.x, y: a.out.y + offset };
+    inOuter = { x: a.in.x, y: a.in.y + offset };
+  } else if (node?.type === 'basic') {
+    // Basic Event: Only top handle, outer is ABOVE
+    outOuter = { x: a.out.x, y: a.out.y - offset };
+    inOuter = { x: a.in.x, y: a.in.y - offset };
+  } else {
+    // Middle and Gate: In at top (up), Out at bottom (down)
+    outOuter = { x: a.out.x, y: a.out.y + offset };
+    inOuter = { x: a.in.x, y: a.in.y - offset };
+  }
+  
   return {
     out: a.out,
-    outOuter: { x: a.out.x, y: a.out.y + offset },
+    outOuter,
     in: a.in,
-    inOuter: { x: a.in.x, y: a.in.y - offset }
+    inOuter
   }
 }
 
@@ -2547,16 +2869,50 @@ const computeSmoothOrthoPoints = (sourceId, targetId, grid) => {
   const source = getNodePorts(sourceId)
   const target = getNodePorts(targetId)
   const ignore = new Set([sourceId, targetId])
-  const step = gridStep
+  const step = gridStep.value
+
+  // 1. Direct vertical/horizontal line optimization (User: "移位后出现，对齐后消失" fix)
+  const x1 = source.out.x
+  const x2 = target.in.x
+  const dx = Math.abs(x1 - x2)
+  
+  // If perfectly or near-perfectly aligned vertically
+  if (dx < 4) {
+    const x = (x1 + x2) / 2
+    const yStart = source.out.y
+    const yEnd = target.in.y
+    const minYS = Math.min(yStart, yEnd)
+    const maxYS = Math.max(yStart, yEnd)
+    
+    // Quick check if path is clear of OTHER nodes
+    const isPathBlocked = nodes.value.some(n => {
+      if (ignore.has(n.id)) return false
+      const nw = n.type === 'gate' ? gateWidth.value : nodeWidth.value
+      const nh = n.type === 'gate' ? gateHeight.value : nodeHeight.value
+      const pad = 6
+      return x > n.x - pad && x < n.x + nw + pad && 
+             n.y < maxYS - pad && n.y + nh > minYS + pad
+    })
+
+    if (!isPathBlocked) {
+      // Add a tiny 0.1px offset to X for direct lines to ensure SVG filters work correctly
+      // (Filters often fail on perfectly vertical/horizontal lines with zero width/height)
+      return [
+        { x: x, y: yStart },
+        { x: x + 0.1, y: (yStart + yEnd) / 2 },
+        { x: x, y: yEnd }
+      ]
+    }
+  }
 
   const start = source.outOuter
   const end = target.inOuter
   const baseY = snapToGrid((start.y + end.y) / 2, step)
   const minY = 8
-  const maxY = Math.max(minY, (canvasSize.value?.height ?? 900) - 8)
+  const maxY = Math.max(minY, (grid.height ?? 2000) - 8)
 
   const candidates = []
-  for (let k = 0; k <= 14; k++) {
+  for (let k = 0; k <= 32; k++) { // Increased search depth for very large trees
     const dy = k * step
     candidates.push(baseY + dy)
     if (k > 0) candidates.push(baseY - dy)
