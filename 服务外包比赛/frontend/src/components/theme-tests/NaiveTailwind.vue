@@ -295,10 +295,11 @@
               <div
                 v-if="node.type === 'gate'"
                 class="c-gate-node absolute z-20 select-none cursor-grab active:cursor-grabbing transition duration-200 flex items-center justify-center"
-                :class="node.id === selectedNodeId ? 'is-selected' : ''"
+                :class="isNodeHighlighted(node) ? 'is-selected' : ''"
                 :style="{ left: node.x + 'px', top: node.y + 'px', width: gateWidth + 'px', height: gateHeight + 'px' }"
                 @mousedown="handleNodeMouseDown(node, $event)"
                 @click.stop="handleSelectNode(node.id, { focus: true })"
+                @dblclick.stop="handleNodeDblClick(node.id)"
                 @focus="handleSelectNode(node.id, { effects: false })"
                 @keydown.enter.prevent="handleSelectNode(node.id, { focus: true })"
                 @keydown.space.prevent="handleSelectNode(node.id, { focus: true })"
@@ -307,9 +308,9 @@
                 role="button"
                 :aria-label="`逻辑门 ${node.gate}，按 Enter 选中`"
               >
-                <span class="c-node-glow-inner" v-if="node.id === selectedNodeId" :key="'g1-' + nodeEffectKey"></span>
-                <span class="c-node-glow-outer" v-if="node.id === selectedNodeId" :key="'g2-' + nodeEffectKey"></span>
-                <span class="c-node-pulse" v-if="node.id === selectedNodeId" :key="'p-' + nodeEffectKey"></span>
+                <span class="c-node-glow-inner" v-if="isNodeHighlighted(node)" :key="'g1-' + nodeEffectKey"></span>
+                <span class="c-node-glow-outer" v-if="isNodeHighlighted(node)" :key="'g2-' + nodeEffectKey"></span>
+                <span class="c-node-pulse" v-if="isNodeHighlighted(node)" :key="'p-' + nodeEffectKey"></span>
                 <svg class="w-full h-full" viewBox="0 0 120 80" fill="none">
                   <path
                     v-if="node.gate === 'AND'"
@@ -366,7 +367,7 @@
                 v-else
                 class="c-node absolute z-10 border-2 shadow-xl select-none cursor-grab active:cursor-grabbing p-4 transition duration-200 flex flex-col justify-center"
                 :class="[
-                  node.id === selectedNodeId ? 'is-selected' : '',
+                  isNodeHighlighted(node) ? 'is-selected' : '',
                   node.type === 'top' ? 'border-rose-600 bg-rose-50' : '',
                   node.type === 'middle' ? 'border-sky-700 bg-sky-50' : '',
                   node.type === 'basic' ? 'border-emerald-700 bg-emerald-50' : ''
@@ -374,6 +375,7 @@
                 :style="{ left: node.x + 'px', top: node.y + 'px' }"
                 @mousedown="handleNodeMouseDown(node, $event)"
                 @click.stop="handleSelectNode(node.id, { focus: true })"
+                @dblclick.stop="handleNodeDblClick(node.id)"
                 @focus="handleSelectNode(node.id, { effects: false })"
                 @keydown.enter.prevent="handleSelectNode(node.id, { focus: true })"
                 @keydown.space.prevent="handleSelectNode(node.id, { focus: true })"
@@ -382,10 +384,10 @@
                 role="button"
                 :aria-label="`节点 ${node.label}，按 Enter 选中，按 Shift+方向键移动`"
               >
-                <span class="c-node-glow-inner" v-if="node.id === selectedNodeId" :key="'g1-' + nodeEffectKey"></span>
-                <span class="c-node-glow-outer" v-if="node.id === selectedNodeId" :key="'g2-' + nodeEffectKey"></span>
-                <span class="c-node-pulse" v-if="node.id === selectedNodeId" :key="'p-' + nodeEffectKey"></span>
-                <span class="c-node-hover-glow" v-if="node.id !== selectedNodeId"></span>
+                <span class="c-node-glow-inner" v-if="isNodeHighlighted(node)" :key="'g1-' + nodeEffectKey"></span>
+                <span class="c-node-glow-outer" v-if="isNodeHighlighted(node)" :key="'g2-' + nodeEffectKey"></span>
+                <span class="c-node-pulse" v-if="isNodeHighlighted(node)" :key="'p-' + nodeEffectKey"></span>
+                <span class="c-node-hover-glow" v-if="!isNodeHighlighted(node)"></span>
                 <div class="flex items-center justify-between text-xs text-[var(--c-text-muted)] transition-colors duration-[420ms] gap-2">
                   <div class="font-semibold text-[var(--c-text)]/90 transition-colors duration-[420ms] whitespace-nowrap">{{ nodeTypeText(node.type) }}</div>
                   <div class="px-2 py-0.5 rounded-full bg-[var(--c-surface-2)]/70 border border-[var(--c-border)] font-semibold text-[var(--c-text)]/85 transition-colors duration-[420ms] whitespace-nowrap">{{ node.probability }}</div>
@@ -960,7 +962,24 @@ const edges = ref([
 ])
 
 const selectedNodeId = ref('N-3')
+const isSingleSelectionMode = ref(false)
 const selectedNode = computed(() => nodes.value.find((n) => n.id === selectedNodeId.value) ?? null)
+
+// Check if a node should be highlighted (either selected or has the same label as the selected node)
+const isNodeHighlighted = (node) => {
+  if (!selectedNodeId.value) return false
+  if (node.id === selectedNodeId.value) return true
+  
+  // If in single selection mode, only highlight the exact selected node
+  if (isSingleSelectionMode.value) return false
+  
+  // If not in single selection mode, highlight nodes with the same label
+  if (node.type !== 'gate' && selectedNode.value && selectedNode.value.type !== 'gate') {
+    return node.label === selectedNode.value.label
+  }
+  
+  return false
+}
 const isGateSelected = computed(() => selectedNode.value?.type === 'gate')
 const selectedEdgeId = ref('')
 const selectedEdge = computed(() => edges.value.find((e) => e.id === selectedEdgeId.value) ?? null)
@@ -1304,21 +1323,63 @@ const updateEdgeById = (id, patch) => {
 
 const commitNodeForm = () => {
   if (!selectedNode.value) return
-  const id = selectedNode.value.id
   const isGate = selectedNode.value.type === 'gate'
   const keys = isGate ? ['gate'] : ['label', 'type', 'probability', 'source']
-  const before = {}
-  const after = {}
-  for (const k of keys) {
-    const cur = selectedNode.value[k]
-    const next = nodeForm[k]
-    if (cur !== next) {
-      before[k] = cur
-      after[k] = next
+  
+  // Find nodes to update
+  const nodesToUpdate = []
+  if (!isSingleSelectionMode.value && !isGate) {
+    const currentLabel = selectedNode.value.label
+    nodesToUpdate.push(...nodes.value.filter(n => n.type !== 'gate' && n.label === currentLabel))
+  } else {
+    nodesToUpdate.push(selectedNode.value)
+  }
+
+  const batchDo = []
+  const batchUndo = []
+
+  for (const node of nodesToUpdate) {
+    const id = node.id
+    const before = {}
+    const after = {}
+    let changed = false
+    
+    for (const k of keys) {
+      const cur = node[k]
+      const next = nodeForm[k]
+      if (cur !== next) {
+        before[k] = cur
+        after[k] = next
+        changed = true
+      }
+    }
+    
+    if (changed) {
+      // 自动更新“来源”为当前日期 (仅限事件节点)
+      if (!isGate) {
+        const today = new Date()
+        const dateStr = `修改于${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+        if (node.source !== dateStr) {
+          before.source = node.source
+          after.source = dateStr
+        }
+      }
+      batchDo.push({ id, after })
+      batchUndo.push({ id, before })
     }
   }
-  if (!Object.keys(before).length) return
-  exec({ do: () => updateNodeById(id, after), undo: () => updateNodeById(id, before) })
+
+  if (!batchDo.length) return
+
+  exec({
+    do: () => {
+      batchDo.forEach(({ id, after }) => updateNodeById(id, after))
+      if (batchDo.length > 1) toast(`已同步修改 ${batchDo.length} 个重名事件`)
+    },
+    undo: () => {
+      batchUndo.forEach(({ id, before }) => updateNodeById(id, before))
+    }
+  })
 }
 
 const commitEdgeForm = () => {
@@ -2191,6 +2252,13 @@ const resolveEventToEventDrop = ({ fromHandle, fromId, hoveredId }) => {
 }
 
 const handleSelectNode = (id, { effects = true, focus = false } = {}) => {
+  // If clicking the same node again, don't reset single selection mode if it was already set
+  // However, the user said "clicking an event" (single click) makes all same-named light up.
+  // "Double click after clicking" makes only that one selected.
+  // So a single click should always reset to global mode unless we want to toggle.
+  // Let's stick to the requirement: single click = global, double click = single.
+  isSingleSelectionMode.value = false
+  
   // If we are currently dragging a connection line, finish it when clicking a node
   if (connectDrag.value) {
     const fromId = connectDrag.value.fromId;
@@ -2257,6 +2325,13 @@ const handleSelectNode = (id, { effects = true, focus = false } = {}) => {
     }
     exec({ do: () => updateEdgeById(edgeId, after), undo: () => updateEdgeById(edgeId, before) })
     reconnectMode.value = false
+  }
+}
+
+const handleNodeDblClick = (id) => {
+  if (selectedNodeId.value === id) {
+    isSingleSelectionMode.value = true
+    toast('已进入单一节点编辑模式', 'info')
   }
 }
 
