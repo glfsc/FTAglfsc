@@ -4,11 +4,19 @@ FROM node:18-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
+<<<<<<< Updated upstream
 # 复制package.json和package-lock.json
 COPY package.json .
 
 # 安装依赖
 RUN npm install
+=======
+# 复制 package.json 和 package-lock.json (修改点)
+COPY package*.json ./
+
+# 配置国内淘宝镜像源并使用 npm ci 安装依赖 (修改点)
+RUN npm config set registry https://registry.npmmirror.com/ && npm ci
+>>>>>>> Stashed changes
 
 # 复制源代码
 COPY . .

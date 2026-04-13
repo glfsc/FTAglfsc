@@ -1,8 +1,19 @@
+<<<<<<< Updated upstream
 __pycache__
+=======
+# 1. 拦截环境配置文件 (最高优先级：防止密钥泄露到镜像中)
+.env
+*.env
+.env.*
+
+# 2. 忽略 Python 的缓存和虚拟环境 (避免跨平台冲突和臃肿)
+__pycache__/
+>>>>>>> Stashed changes
 *.pyc
 *.pyo
 *.pyd
 .Python
+<<<<<<< Updated upstream
 .pytest_cache
 .coverage
 .git
@@ -21,4 +32,25 @@ node_modules
 data/output/*
 *.json
 models/
+.hf_cache/.hf_cache/
+=======
+env/
+venv/
+.venv/
+Pipfile.lock
+
+# 3. 忽略本地大模型或分词器缓存 (防止构建过慢，建议通过数据卷挂载)
 .hf_cache/
+models/
+huggingface/
+
+# 4. 忽略本地的日志和临时文件
+*.log
+/tmp/
+
+# 5. 忽略 IDE 和 Git 配置
+.vscode/
+.idea/
+.git/
+.gitignore
+>>>>>>> Stashed changes
