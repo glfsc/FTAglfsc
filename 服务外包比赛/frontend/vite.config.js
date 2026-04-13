@@ -37,3 +37,6 @@ export default defineConfig({
   },
   logLevel: process.env.NODE_ENV === 'development' ? 'error' : 'info' // 开发环境只显示错误，忽略 source map 警告
 })
+
+const port = 3000;
+console.log(`\n前端服务已启动! 访问地址: http://localhost:${port}\n`);
