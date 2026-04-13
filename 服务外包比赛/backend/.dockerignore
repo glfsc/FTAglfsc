@@ -33,6 +33,7 @@ data/output/*
 *.json
 models/
 .hf_cache/.hf_cache/
+.hf_cache/
 =======
 env/
 venv/
